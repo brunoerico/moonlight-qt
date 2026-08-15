@@ -274,6 +274,19 @@ void SdlInputHandler::setWindow(SDL_Window *window)
 
 void SdlInputHandler::raiseAllKeys()
 {
+    // Not folded into the m_KeysDown.isEmpty() early-return below: a focus
+    // loss (this function's caller, notifyFocusLost()) can happen while
+    // Escape is physically held but not yet in m_KeysDown's synthetic-release
+    // bookkeeping path, leaving the 10-second hold-to-quit timer (keyboard.cpp)
+    // running with no window focused to ever deliver the matching key-up that
+    // would normally cancel it - found live: a session was quit ~10s after an
+    // unrelated brief Escape tap coincided with a focus change, with nothing
+    // for the user to correlate it to.
+    if (m_EscHoldTimerId != 0) {
+        SDL_RemoveTimer(m_EscHoldTimerId);
+        m_EscHoldTimerId = 0;
+    }
+
     if (m_KeysDown.isEmpty()) {
         return;
     }
