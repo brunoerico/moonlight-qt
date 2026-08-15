@@ -1040,6 +1040,7 @@ int main(int argc, char *argv[])
             auto launcher = new LanhouseConnect::Launcher(
                 lanhouseParser.getHost(), lanhouseParser.getAppName(),
                 lanhouseParser.getTicket(), lanhouseParser.getLanhouseHostId(),
+                lanhouseParser.getLiveSessionId(),
                 preferences, &app);
             engine.rootContext()->setContextProperty("launcher", launcher);
             break;

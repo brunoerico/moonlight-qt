@@ -21,6 +21,14 @@
 // hardcoded the same way mappingfetcher.cpp hardcodes moonlight-stream.org.
 static const QString LANHOUSE_WEB_BASE_URL = "https://lanhousecloudgaming.com.br";
 
+// Same Supabase project + public anon key already embedded in the WebRTC
+// bridge's own bundled JS (dev/lanhouse-stream/client/web/heartbeat.ts) -
+// heartbeat_live_session is anon-callable by design (the unguessable
+// live_session_id itself is the capability, not a user session), so this
+// client can call it exactly the same way with no lanhouse-web auth at all.
+static const QString SUPABASE_URL = "https://fuyxdhvfuuoonszsenmy.supabase.co";
+static const QString SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1eXhkaHZmdXVvb25zenNlbm15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MDQ3NzMsImV4cCI6MjA5OTM4MDc3M30.unDWgN-N9r3pZoqJEsy_R3O5UdQ3PyHUYhDTMoBUONs";
+
 namespace LanhouseConnect
 {
 
@@ -48,6 +56,41 @@ static void reportPinToLanhouseWeb(const QString &ticket, const QString &lanhous
     QObject::connect(reply, &QNetworkReply::finished, [nam, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
             qWarning() << "Failed to report pairing PIN to lanhouse-web:" << reply->errorString();
+        }
+        reply->deleteLater();
+        nam->deleteLater();
+    });
+}
+
+// Keeps live_sessions.last_heartbeat_at fresh while streaming, exactly what
+// heartbeat.ts's sendHeartbeat() does for the WebRTC bridge - without this,
+// the Orquestrador's stale_connection check (ORCHESTRATOR.md) has nothing
+// to go on and kills every native-path session after
+// stale_connection_timeout_minutes, even mid-game (found live-testing the
+// full customer journey: every session today got end_reason='stale_connection'
+// a few minutes in, regardless of actual play). p_idle_seconds is always 0
+// here - real per-input idle tracking isn't wired up in this client yet, so
+// this only fixes the connection-liveness half of the Orquestrador, not the
+// AFK/idle-timeout half; that's a known follow-up, not attempted here.
+static void sendHeartbeat(const QString &liveSessionId)
+{
+    auto nam = new QNetworkAccessManager();
+    nam->setStrictTransportSecurityEnabled(true);
+
+    QUrl url(SUPABASE_URL + "/rest/v1/rpc/heartbeat_live_session");
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader("apikey", SUPABASE_ANON_KEY.toUtf8());
+    request.setRawHeader("Authorization", ("Bearer " + SUPABASE_ANON_KEY).toUtf8());
+
+    QJsonObject body;
+    body["p_live_session_id"] = liveSessionId;
+    body["p_idle_seconds"] = 0;
+
+    QNetworkReply *reply = nam->post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    QObject::connect(reply, &QNetworkReply::finished, [nam, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            qWarning() << "Failed to send session heartbeat:" << reply->errorString();
         }
         reply->deleteLater();
         nam->deleteLater();
@@ -200,11 +243,24 @@ public:
             if (isNotStreaming() || isStreamingApp(app)) {
                 m_State = StateStartSession;
                 session = new Session(m_Computer, app, m_Preferences);
+                startHeartbeat();
                 emit q->sessionCreated(app.name, session);
             } else {
                 emit q->appQuitRequired(getCurrentAppName());
             }
         }
+    }
+
+    // No-op if m_LiveSessionId is empty (e.g. a manual CLI test run without
+    // --lanhouse-live-session-id) - heartbeat is purely additive, streaming
+    // still works exactly as before without it.
+    void startHeartbeat()
+    {
+        if (m_LiveSessionId.isEmpty() || m_HeartbeatTimer->isActive()) {
+            return;
+        }
+        sendHeartbeat(m_LiveSessionId);
+        m_HeartbeatTimer->start();
     }
 
     int getAppIndex() const
@@ -242,16 +298,18 @@ public:
     QString m_AppName;
     QString m_Ticket;
     QString m_LanhouseHostId;
+    QString m_LiveSessionId;
     StreamingPreferences *m_Preferences;
     ComputerManager *m_ComputerManager;
     ComputerSeeker *m_ComputerSeeker;
     NvComputer *m_Computer;
     State m_State;
     QTimer *m_TimeoutTimer;
+    QTimer *m_HeartbeatTimer;
 };
 
 Launcher::Launcher(QString computer, QString app, QString ticket, QString lanhouseHostId,
-                   StreamingPreferences* preferences, QObject *parent)
+                   QString liveSessionId, StreamingPreferences* preferences, QObject *parent)
     : QObject(parent),
       m_DPtr(new LauncherPrivate(this))
 {
@@ -260,12 +318,22 @@ Launcher::Launcher(QString computer, QString app, QString ticket, QString lanhou
     d->m_AppName = app;
     d->m_Ticket = ticket;
     d->m_LanhouseHostId = lanhouseHostId;
+    d->m_LiveSessionId = liveSessionId;
     d->m_Preferences = preferences;
     d->m_State = StateInit;
     d->m_TimeoutTimer = new QTimer(this);
     d->m_TimeoutTimer->setSingleShot(true);
     connect(d->m_TimeoutTimer, &QTimer::timeout,
             this, &Launcher::onTimeout);
+
+    // 60s matches heartbeat.ts's HEARTBEAT_INTERVAL_MS on the WebRTC side -
+    // well under stale_connection_timeout_minutes (3 in test, higher in
+    // production) so a single missed beat never trips the timeout.
+    d->m_HeartbeatTimer = new QTimer(this);
+    d->m_HeartbeatTimer->setInterval(60000);
+    connect(d->m_HeartbeatTimer, &QTimer::timeout, this, [d]() {
+        sendHeartbeat(d->m_LiveSessionId);
+    });
 }
 
 Launcher::~Launcher()

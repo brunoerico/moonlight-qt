@@ -110,10 +110,12 @@ public:
     QString getAppName() const;
     QString getTicket() const;
     QString getLanhouseHostId() const;
+    QString getLiveSessionId() const;
 
 private:
     QString m_Host;
     QString m_AppName;
     QString m_Ticket;
     QString m_LanhouseHostId;
+    QString m_LiveSessionId;
 };

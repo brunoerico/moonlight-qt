@@ -29,7 +29,7 @@ class Launcher : public QObject
 
 public:
     explicit Launcher(QString computer, QString app, QString ticket, QString lanhouseHostId,
-                      StreamingPreferences* preferences,
+                      QString liveSessionId, StreamingPreferences* preferences,
                       QObject *parent = nullptr);
     ~Launcher();
     Q_INVOKABLE void execute(ComputerManager *manager);

@@ -618,6 +618,7 @@ void LanhouseConnectCommandLineParser::parse(const QStringList &args)
     parser.addPositionalArgument("app", "App to stream", "\"<app>\"");
     parser.addValueOption("lanhouse-ticket", "signed stream ticket from lanhouse-web");
     parser.addValueOption("lanhouse-host-id", "lanhouse-web's hosts.id for this host");
+    parser.addValueOption("lanhouse-live-session-id", "live_sessions.id, enables heartbeat reporting while streaming");
 
     if (!parser.parse(args)) {
         parser.showError(parser.errorText());
@@ -638,6 +639,7 @@ void LanhouseConnectCommandLineParser::parse(const QStringList &args)
     if (m_Ticket.isEmpty() || m_LanhouseHostId.isEmpty()) {
         parser.showError("--lanhouse-ticket and --lanhouse-host-id are both required");
     }
+    m_LiveSessionId = parser.value("lanhouse-live-session-id");
 }
 
 QString LanhouseConnectCommandLineParser::getHost() const
@@ -658,4 +660,9 @@ QString LanhouseConnectCommandLineParser::getTicket() const
 QString LanhouseConnectCommandLineParser::getLanhouseHostId() const
 {
     return m_LanhouseHostId;
+}
+
+QString LanhouseConnectCommandLineParser::getLiveSessionId() const
+{
+    return m_LiveSessionId;
 }
