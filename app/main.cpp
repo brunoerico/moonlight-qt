@@ -43,6 +43,7 @@
 #include "cli/quitstream.h"
 #include "cli/startstream.h"
 #include "cli/pair.h"
+#include "cli/lanhouseconnect.h"
 #include "cli/commandlineparser.h"
 #include "path.h"
 #include "utils.h"
@@ -1028,6 +1029,19 @@ int main(int argc, char *argv[])
             auto launcher = new CliListApps::Launcher(listParser.getHost(), listParser, &app);
             launcher->execute(new ComputerManager(StreamingPreferences::get()));
             hasGUI = false;
+            break;
+        }
+    case GlobalCommandLineParser::LanhouseConnectRequested:
+        {
+            initialView = "qrc:/gui/LanhouseConnectSegue.qml";
+            StreamingPreferences* preferences = StreamingPreferences::get();
+            LanhouseConnectCommandLineParser lanhouseParser;
+            lanhouseParser.parse(app.arguments());
+            auto launcher = new LanhouseConnect::Launcher(
+                lanhouseParser.getHost(), lanhouseParser.getAppName(),
+                lanhouseParser.getTicket(), lanhouseParser.getLanhouseHostId(),
+                preferences, &app);
+            engine.rootContext()->setContextProperty("launcher", launcher);
             break;
         }
     }

@@ -14,6 +14,7 @@ public:
         QuitRequested,
         PairRequested,
         ListRequested,
+        LanhouseConnectRequested,
     };
 
     GlobalCommandLineParser();
@@ -90,4 +91,29 @@ private:
     QString m_Host;
     bool m_PrintCSV;
     bool m_Verbose;
+};
+
+// Combines pair + stream in one non-interactive action, for LanHouse's own
+// "click play inside the app" flow (see lanhouse-web's ORCHESTRATOR.md,
+// Fase 2) - reports the pairing PIN to lanhouse-web instead of displaying
+// it, since there's no human here to read it off the screen and type it
+// into the host's admin panel.
+class LanhouseConnectCommandLineParser
+{
+public:
+    LanhouseConnectCommandLineParser();
+    virtual ~LanhouseConnectCommandLineParser();
+
+    void parse(const QStringList &args);
+
+    QString getHost() const;
+    QString getAppName() const;
+    QString getTicket() const;
+    QString getLanhouseHostId() const;
+
+private:
+    QString m_Host;
+    QString m_AppName;
+    QString m_Ticket;
+    QString m_LanhouseHostId;
 };

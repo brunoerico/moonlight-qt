@@ -163,6 +163,12 @@ macx {
 
     LIBS += -lobjc -framework VideoToolbox -framework AVFoundation -framework CoreVideo -framework CoreGraphics -framework CoreMedia -framework AppKit -framework Metal -framework QuartzCore
     CONFIG += ffmpeg
+
+    # Qt 6.8's qyieldcpu.h calls the ARM __yield() intrinsic without including
+    # arm_acle.h, which newer Xcode/SDK clang treats as a hard error in C++
+    # (unlike C, there's no implicit-declaration leniency). Force-include the
+    # ACLE header ahead of every translation unit so it's already declared.
+    QMAKE_CXXFLAGS += -include arm_acle.h
 }
 
 SOURCES += \
@@ -179,6 +185,7 @@ SOURCES += \
     backend/boxartmanager.cpp \
     backend/richpresencemanager.cpp \
     cli/commandlineparser.cpp \
+    cli/lanhouseconnect.cpp \
     cli/listapps.cpp \
     cli/quitstream.cpp \
     cli/startstream.cpp \
@@ -223,6 +230,7 @@ HEADERS += \
     backend/boxartmanager.h \
     backend/richpresencemanager.h \
     cli/commandlineparser.h \
+    cli/lanhouseconnect.h \
     cli/listapps.h \
     cli/quitstream.h \
     cli/startstream.h \
@@ -554,9 +562,11 @@ win32 {
     QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTINPUT:$${PWD}/Moonlight.exe.manifest
 }
 macx {
-    # Create Info.plist in object dir with the correct version string
-    system(cp $$PWD/Info.plist $$OUT_PWD/Info.plist)
-    system(sed -i -e 's/VERSION/$$cat(version.txt)/g' $$OUT_PWD/Info.plist)
+    # Create Info.plist in object dir with the correct version string.
+    # Quoted: unquoted $$PWD/$$OUT_PWD break when the source tree lives
+    # under a path with spaces (as this project's does).
+    system(cp \"$$PWD/Info.plist\" \"$$OUT_PWD/Info.plist\")
+    system(sed -i '' -e 's/VERSION/$$cat(version.txt)/g' \"$$OUT_PWD/Info.plist\")
 
     QMAKE_INFO_PLIST = $$OUT_PWD/Info.plist
 

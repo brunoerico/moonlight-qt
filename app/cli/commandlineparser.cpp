@@ -161,6 +161,8 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
         "  quit            Quit the currently running app\n"
         "  stream          Start streaming an app\n"
         "  pair            Pair a new host\n"
+        "  lanhouse-connect Pair (if needed) and stream, reporting the PIN\n"
+        "                  to lanhouse-web instead of displaying it\n"
         "\n"
         "See 'moonlight <action> --help' for help of specific action."
     );
@@ -192,6 +194,8 @@ GlobalCommandLineParser::ParseResult GlobalCommandLineParser::parse(const QStrin
                 return PairRequested;
             } else if (action == "list") {
                 return ListRequested;
+            } else if (action == "lanhouse-connect") {
+                return LanhouseConnectRequested;
             }
         }
 
@@ -590,4 +594,68 @@ bool ListCommandLineParser::isPrintCSV() const
 bool ListCommandLineParser::isVerbose() const
 {
     return m_Verbose;
+}
+
+LanhouseConnectCommandLineParser::LanhouseConnectCommandLineParser()
+{
+}
+
+LanhouseConnectCommandLineParser::~LanhouseConnectCommandLineParser()
+{
+}
+
+void LanhouseConnectCommandLineParser::parse(const QStringList &args)
+{
+    CommandLineParser parser;
+    parser.setupCommonOptions();
+    parser.setApplicationDescription(
+        "\n"
+        "Pairs (if needed) and streams an app, reporting the pairing PIN to\n"
+        "lanhouse-web instead of displaying it for a human to enter."
+    );
+    parser.addPositionalArgument("lanhouse-connect", "Pair and stream");
+    parser.addPositionalArgument("host", "Host computer name, UUID, or IP address", "<host>");
+    parser.addPositionalArgument("app", "App to stream", "\"<app>\"");
+    parser.addValueOption("lanhouse-ticket", "signed stream ticket from lanhouse-web");
+    parser.addValueOption("lanhouse-host-id", "lanhouse-web's hosts.id for this host");
+
+    if (!parser.parse(args)) {
+        parser.showError(parser.errorText());
+    }
+
+    parser.handleUnknownOptions();
+    parser.handleHelpAndVersionOptions();
+
+    auto posArgs = parser.positionalArguments();
+    if (posArgs.length() < 3) {
+        parser.showError("Host and app must both be provided");
+    }
+    m_Host = posArgs.at(1);
+    m_AppName = posArgs.at(2);
+
+    m_Ticket = parser.value("lanhouse-ticket");
+    m_LanhouseHostId = parser.value("lanhouse-host-id");
+    if (m_Ticket.isEmpty() || m_LanhouseHostId.isEmpty()) {
+        parser.showError("--lanhouse-ticket and --lanhouse-host-id are both required");
+    }
+}
+
+QString LanhouseConnectCommandLineParser::getHost() const
+{
+    return m_Host;
+}
+
+QString LanhouseConnectCommandLineParser::getAppName() const
+{
+    return m_AppName;
+}
+
+QString LanhouseConnectCommandLineParser::getTicket() const
+{
+    return m_Ticket;
+}
+
+QString LanhouseConnectCommandLineParser::getLanhouseHostId() const
+{
+    return m_LanhouseHostId;
 }
