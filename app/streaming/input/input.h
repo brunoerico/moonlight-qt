@@ -194,6 +194,17 @@ private:
     static
     Uint32 mouseEmulationTimerCallback(Uint32 interval, void* param);
 
+    // Holding plain Escape (no modifiers) for 10 seconds quits the stream,
+    // same effect as the Ctrl+Alt+Shift+Q combo - added because that combo
+    // isn't discoverable for non-technical users (LanHouse: found testing
+    // the real customer journey end to end, users left sessions stuck
+    // because closing the SDL stream window doesn't cleanly end it).
+    // Escape's normal tap-to-pause-menu behavior in games is unaffected -
+    // this only fires if held the full 10s, and a quick tap forwards to the
+    // host exactly as before.
+    static
+    Uint32 escHoldTimerCallback(Uint32 interval, void* param);
+
     static
     Uint32 releaseLeftButtonTimerCallback(Uint32 interval, void* param);
 
@@ -237,6 +248,7 @@ private:
     SDL_TouchFingerEvent m_LastTouchDownEvent;
     SDL_TouchFingerEvent m_LastTouchUpEvent;
     SDL_TimerID m_LongPressTimer;
+    SDL_TimerID m_EscHoldTimerId;
     int m_StreamWidth;
     int m_StreamHeight;
     bool m_AbsoluteMouseMode;

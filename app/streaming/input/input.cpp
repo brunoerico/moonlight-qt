@@ -24,6 +24,7 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
       m_CaptureSystemKeysMode(prefs.captureSysKeysMode),
       m_MouseCursorCapturedVisibilityState(SDL_DISABLE),
       m_LongPressTimer(0),
+      m_EscHoldTimerId(0),
       m_StreamWidth(streamWidth),
       m_StreamHeight(streamHeight),
       m_AbsoluteMouseMode(prefs.absoluteMouseMode),
@@ -234,6 +235,7 @@ SdlInputHandler::~SdlInputHandler()
     }
 
     SDL_RemoveTimer(m_LongPressTimer);
+    SDL_RemoveTimer(m_EscHoldTimerId);
     SDL_RemoveTimer(m_LeftButtonReleaseTimer);
     SDL_RemoveTimer(m_RightButtonReleaseTimer);
     SDL_RemoveTimer(m_DragTimer);

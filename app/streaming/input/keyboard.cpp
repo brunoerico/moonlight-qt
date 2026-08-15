@@ -173,11 +173,36 @@ void SdlInputHandler::performSpecialKeyCombo(KeyCombo combo)
     }
 }
 
+Uint32 SdlInputHandler::escHoldTimerCallback(Uint32 /* interval */, void* param)
+{
+    // Runs on SDL's timer thread, not the main thread - performSpecialKeyCombo()
+    // only does SDL_PushEvent(), which is documented thread-safe.
+    auto* me = reinterpret_cast<SdlInputHandler*>(param);
+    me->performSpecialKeyCombo(KeyComboQuit);
+    me->m_EscHoldTimerId = 0;
+    return 0; // Don't repeat
+}
+
 void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
 {
     short keyCode;
     char modifiers;
     bool shouldNotConvertToScanCodeOnServer = false;
+
+    if (event->keysym.scancode == SDL_SCANCODE_ESCAPE) {
+        if (event->state == SDL_PRESSED && !event->repeat) {
+            if (m_EscHoldTimerId == 0) {
+                m_EscHoldTimerId = SDL_AddTimer(10000, SdlInputHandler::escHoldTimerCallback, this);
+            }
+        }
+        else if (event->state == SDL_RELEASED) {
+            if (m_EscHoldTimerId != 0) {
+                SDL_RemoveTimer(m_EscHoldTimerId);
+                m_EscHoldTimerId = 0;
+            }
+        }
+        // Fall through - a quick tap still needs to reach the host normally.
+    }
 
     if (event->repeat) {
         // Ignore repeat key down events
