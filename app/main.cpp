@@ -1036,7 +1036,7 @@ int main(int argc, char *argv[])
             initialView = "qrc:/gui/LanhouseConnectSegue.qml";
             StreamingPreferences* preferences = StreamingPreferences::get();
             LanhouseConnectCommandLineParser lanhouseParser;
-            lanhouseParser.parse(app.arguments());
+            lanhouseParser.parse(app.arguments(), preferences);
             auto launcher = new LanhouseConnect::Launcher(
                 lanhouseParser.getHost(), lanhouseParser.getAppName(),
                 lanhouseParser.getTicket(), lanhouseParser.getLanhouseHostId(),

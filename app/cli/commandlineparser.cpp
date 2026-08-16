@@ -598,13 +598,24 @@ bool ListCommandLineParser::isVerbose() const
 
 LanhouseConnectCommandLineParser::LanhouseConnectCommandLineParser()
 {
+    m_VideoCodecMap = {
+        {"auto",  StreamingPreferences::VCC_AUTO},
+        {"H.264", StreamingPreferences::VCC_FORCE_H264},
+        {"HEVC",  StreamingPreferences::VCC_FORCE_HEVC},
+        {"AV1", StreamingPreferences::VCC_FORCE_AV1},
+    };
+    m_VideoDecoderMap = {
+        {"auto",     StreamingPreferences::VDS_AUTO},
+        {"software", StreamingPreferences::VDS_FORCE_SOFTWARE},
+        {"hardware", StreamingPreferences::VDS_FORCE_HARDWARE},
+    };
 }
 
 LanhouseConnectCommandLineParser::~LanhouseConnectCommandLineParser()
 {
 }
 
-void LanhouseConnectCommandLineParser::parse(const QStringList &args)
+void LanhouseConnectCommandLineParser::parse(const QStringList &args, StreamingPreferences *preferences)
 {
     CommandLineParser parser;
     parser.setupCommonOptions();
@@ -619,6 +630,15 @@ void LanhouseConnectCommandLineParser::parse(const QStringList &args)
     parser.addValueOption("lanhouse-ticket", "signed stream ticket from lanhouse-web");
     parser.addValueOption("lanhouse-host-id", "lanhouse-web's hosts.id for this host");
     parser.addValueOption("lanhouse-live-session-id", "live_sessions.id, enables heartbeat reporting while streaming");
+
+    // Same option names/semantics as StreamCommandLineParser::parse's stream
+    // quality options - Configurações > Transmissão (lanhouse-web) sends
+    // these via LaunchBridge.swift, all optional.
+    parser.addValueOption("resolution", "custom <width>x<height> resolution");
+    parser.addValueOption("fps", "FPS");
+    parser.addValueOption("bitrate", "bitrate in Kbps");
+    parser.addChoiceOption("video-codec", "video codec", m_VideoCodecMap.keys());
+    parser.addChoiceOption("video-decoder", "video decoder", m_VideoDecoderMap.keys());
 
     if (!parser.parse(args)) {
         parser.showError(parser.errorText());
@@ -640,6 +660,36 @@ void LanhouseConnectCommandLineParser::parse(const QStringList &args)
         parser.showError("--lanhouse-ticket and --lanhouse-host-id are both required");
     }
     m_LiveSessionId = parser.value("lanhouse-live-session-id");
+
+    if (preferences != nullptr) {
+        if (parser.isSet("resolution")) {
+            auto resolution = parser.getResolutionOptionValue("resolution");
+            preferences->width  = resolution.first;
+            preferences->height = resolution.second;
+        }
+
+        if (parser.isSet("fps")) {
+            preferences->fps = parser.getIntOption("fps");
+            if (!inRange(preferences->fps, 10, 480)) {
+                fprintf(stderr, "Warning: FPS is out of the supported range (10 - 480 FPS). Performance may suffer!\n");
+            }
+        }
+
+        if (parser.isSet("bitrate")) {
+            preferences->bitrateKbps = parser.getIntOption("bitrate");
+            if (!inRange(preferences->bitrateKbps, 500, 500000)) {
+                fprintf(stderr, "Warning: Bitrate is out of the supported range (500 - 500000 Kbps). Performance may suffer!\n");
+            }
+        }
+
+        if (parser.isSet("video-codec")) {
+            preferences->videoCodecConfig = mapValue(m_VideoCodecMap, parser.getChoiceOptionValue("video-codec"));
+        }
+
+        if (parser.isSet("video-decoder")) {
+            preferences->videoDecoderSelection = mapValue(m_VideoDecoderMap, parser.getChoiceOptionValue("video-decoder"));
+        }
+    }
 }
 
 QString LanhouseConnectCommandLineParser::getHost() const

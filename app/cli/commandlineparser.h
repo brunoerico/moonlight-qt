@@ -104,7 +104,12 @@ public:
     LanhouseConnectCommandLineParser();
     virtual ~LanhouseConnectCommandLineParser();
 
-    void parse(const QStringList &args);
+    // preferences is optional (may be nullptr) so callers that don't care
+    // about stream quality overrides (e.g. tests) don't need to construct
+    // a StreamingPreferences just to parse. When non-null, --resolution/
+    // --fps/--bitrate/--video-codec/--video-decoder are applied onto it,
+    // same option names and semantics as StreamCommandLineParser::parse.
+    void parse(const QStringList &args, StreamingPreferences *preferences = nullptr);
 
     QString getHost() const;
     QString getAppName() const;
@@ -118,4 +123,6 @@ private:
     QString m_Ticket;
     QString m_LanhouseHostId;
     QString m_LiveSessionId;
+    QMap<QString, StreamingPreferences::VideoCodecConfig> m_VideoCodecMap;
+    QMap<QString, StreamingPreferences::VideoDecoderSelection> m_VideoDecoderMap;
 };
