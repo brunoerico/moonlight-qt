@@ -8,6 +8,8 @@ void SdlInputHandler::handleMouseButtonEvent(SDL_MouseButtonEvent* event)
 {
     int button;
 
+    touchActivity();
+
     if (event->which == SDL_TOUCH_MOUSEID) {
         // Ignore synthetic mouse events
         return;
@@ -70,6 +72,8 @@ void SdlInputHandler::handleMouseButtonEvent(SDL_MouseButtonEvent* event)
 
 void SdlInputHandler::handleMouseMotionEvent(SDL_MouseMotionEvent* event)
 {
+    touchActivity();
+
     if (!isCaptureActive()) {
         // Not capturing
         return;
@@ -158,6 +162,8 @@ void SdlInputHandler::handleMouseMotionEvent(SDL_MouseMotionEvent* event)
 
 void SdlInputHandler::handleMouseWheelEvent(SDL_MouseWheelEvent* event)
 {
+    touchActivity();
+
     if (!isCaptureActive()) {
         // Not capturing
         return;

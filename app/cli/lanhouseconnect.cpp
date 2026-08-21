@@ -3,6 +3,7 @@
 #include "backend/computermanager.h"
 #include "backend/computerseeker.h"
 #include "streaming/session.h"
+#include "streaming/input/input.h"
 
 #include <QCoreApplication>
 #include <QTimer>
@@ -62,16 +63,17 @@ static void reportPinToLanhouseWeb(const QString &ticket, const QString &lanhous
     });
 }
 
-// Keeps live_sessions.last_heartbeat_at fresh while streaming, exactly what
-// heartbeat.ts's sendHeartbeat() does for the WebRTC bridge - without this,
-// the Orquestrador's stale_connection check (ORCHESTRATOR.md) has nothing
-// to go on and kills every native-path session after
+// Keeps live_sessions.last_heartbeat_at (and now last_input_at, via
+// p_idle_seconds) fresh while streaming, exactly what heartbeat.ts's
+// sendHeartbeat() does for the WebRTC bridge - without this, the
+// Orquestrador's stale_connection check (ORCHESTRATOR.md) has nothing to go
+// on and kills every native-path session after
 // stale_connection_timeout_minutes, even mid-game (found live-testing the
 // full customer journey: every session today got end_reason='stale_connection'
-// a few minutes in, regardless of actual play). p_idle_seconds is always 0
-// here - real per-input idle tracking isn't wired up in this client yet, so
-// this only fixes the connection-liveness half of the Orquestrador, not the
-// AFK/idle-timeout half; that's a known follow-up, not attempted here.
+// a few minutes in, regardless of actual play). p_idle_seconds now comes from
+// SdlInputHandler::getIdleSeconds() (real keyboard/mouse/gamepad/touch
+// tracking, see input.cpp) instead of a hardcoded 0, so idle_timeout_minutes
+// can actually fire on this path too, not just hour cap / connection drops.
 static void sendHeartbeat(const QString &liveSessionId)
 {
     auto nam = new QNetworkAccessManager();
@@ -85,7 +87,7 @@ static void sendHeartbeat(const QString &liveSessionId)
 
     QJsonObject body;
     body["p_live_session_id"] = liveSessionId;
-    body["p_idle_seconds"] = 0;
+    body["p_idle_seconds"] = SdlInputHandler::getIdleSeconds();
 
     QNetworkReply *reply = nam->post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
     QObject::connect(reply, &QNetworkReply::finished, [nam, reply]() {

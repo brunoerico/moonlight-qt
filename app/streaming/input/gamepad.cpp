@@ -231,6 +231,13 @@ void SdlInputHandler::handleControllerAxisEvent(SDL_ControllerAxisEvent* event)
                 return;
         }
 
+        // Same 0.2 deadzone as stream.ts's GAMEPAD_AXIS_DEADZONE on the WebRTC
+        // bridge side, so idle-timeout accounting isn't fooled by analog stick
+        // drift/noise on a controller nobody's touching.
+        if (qAbs(event->value) > (32767 * 0.2)) {
+            touchActivity();
+        }
+
         // Check for another event to batch with
         if (SDL_PeepEvents(&nextEvent, 1, SDL_PEEKEVENT, SDL_CONTROLLERAXISMOTION, SDL_CONTROLLERAXISMOTION) <= 0) {
             break;
@@ -254,6 +261,8 @@ void SdlInputHandler::handleControllerAxisEvent(SDL_ControllerAxisEvent* event)
 
 void SdlInputHandler::handleControllerButtonEvent(SDL_ControllerButtonEvent* event)
 {
+    touchActivity();
+
     if (event->button >= SDL_arraysize(k_ButtonMap)) {
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                     "No mapping for gamepad button: %u",

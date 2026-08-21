@@ -5,6 +5,9 @@
 
 #include "SDL_compat.h"
 
+#include <atomic>
+#include <QtGlobal>
+
 struct GamepadState {
     SDL_GameController* controller;
     SDL_JoystickID jsId;
@@ -155,6 +158,22 @@ public:
     static
     QString getUnmappedGamepads();
 
+    // LanHouse: real per-input idle tracking for the Orquestrador's
+    // idle_timeout_minutes rule (ORCHESTRATOR.md) - lanhouseconnect.cpp's
+    // heartbeat previously always reported p_idle_seconds=0, so AFK native
+    // sessions never got auto-ended by that rule, only by hour cap or an
+    // actual connection drop. Static because the CLI's heartbeat timer
+    // (Launcher, a separate object) has no reachable pointer to the
+    // SdlInputHandler instance - Session keeps it private and only befriends
+    // SdlInputHandler itself. Mirrors heartbeat.ts/stream.ts's lastInputAt
+    // pattern on the WebRTC bridge side, including the same gamepad axis
+    // deadzone (see gamepad.cpp) so analog stick drift can't fake activity.
+    static
+    void touchActivity();
+
+    static
+    int getIdleSeconds();
+
 private:
     enum KeyCombo {
         KeyComboQuit,
@@ -263,4 +282,6 @@ private:
     int m_NumFingersDown;
 
     static const int k_ButtonMap[];
+
+    static std::atomic<qint64> s_LastActivityMs;
 };

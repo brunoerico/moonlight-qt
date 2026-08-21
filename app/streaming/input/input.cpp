@@ -6,8 +6,29 @@
 #include "utils.h"
 
 #include <QtGlobal>
+#include <QDateTime>
 #include <QDir>
 #include <QGuiApplication>
+
+std::atomic<qint64> SdlInputHandler::s_LastActivityMs {0};
+
+void SdlInputHandler::touchActivity()
+{
+    s_LastActivityMs.store(QDateTime::currentMSecsSinceEpoch(), std::memory_order_relaxed);
+}
+
+int SdlInputHandler::getIdleSeconds()
+{
+    qint64 lastActivityMs = s_LastActivityMs.load(std::memory_order_relaxed);
+    if (lastActivityMs == 0) {
+        // No SdlInputHandler has been constructed yet this run (heartbeat fired
+        // before the stream window came up) - not idle, just not started yet.
+        return 0;
+    }
+
+    qint64 idleMs = QDateTime::currentMSecsSinceEpoch() - lastActivityMs;
+    return static_cast<int>(qMax<qint64>(0, idleMs / 1000));
+}
 
 SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, int streamHeight)
     : m_MultiController(prefs.multiController),
@@ -36,6 +57,10 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
       m_DragButton(0),
       m_NumFingersDown(0)
 {
+    // Start the idle clock fresh for this session rather than reporting a
+    // huge idle time before the first real input arrives.
+    touchActivity();
+
     // System keys are always captured when running without a DE
     if (!WMUtils::isRunningDesktopEnvironment()) {
         m_CaptureSystemKeysMode = StreamingPreferences::CSK_ALWAYS;
@@ -460,6 +485,8 @@ void SdlInputHandler::setCaptureActive(bool active)
 
 void SdlInputHandler::handleTouchFingerEvent(SDL_TouchFingerEvent* event)
 {
+    touchActivity();
+
 #if SDL_VERSION_ATLEAST(2, 0, 10)
     if (SDL_GetTouchDeviceType(event->touchId) != SDL_TOUCH_DEVICE_DIRECT) {
         // Ignore anything that isn't a touchscreen. We may get callbacks

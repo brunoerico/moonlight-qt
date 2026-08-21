@@ -185,6 +185,8 @@ Uint32 SdlInputHandler::escHoldTimerCallback(Uint32 /* interval */, void* param)
 
 void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
 {
+    touchActivity();
+
     short keyCode;
     char modifiers;
     bool shouldNotConvertToScanCodeOnServer = false;
