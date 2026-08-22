@@ -1174,8 +1174,8 @@ bool D3D11VARenderer::createOverlayVertexBuffer(Overlay::OverlayType type, int w
         renderRect.y = m_DisplayHeight - height;
     }
     else if (type == Overlay::OverlayMinimalStats) {
-        // Top right
-        renderRect.x = m_DisplayWidth - width;
+        // Top left
+        renderRect.x = 0;
         renderRect.y = m_DisplayHeight - height;
     }
 

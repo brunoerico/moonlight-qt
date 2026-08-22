@@ -16,7 +16,7 @@ OverlayManager::OverlayManager() :
     m_Overlays[OverlayType::OverlayStatusUpdate].fontSize = 36;
 
     m_Overlays[OverlayType::OverlayMinimalStats].color = {0xFF, 0xFF, 0xFF, 0xFF};
-    m_Overlays[OverlayType::OverlayMinimalStats].fontSize = 18;
+    m_Overlays[OverlayType::OverlayMinimalStats].fontSize = 13;
     // Sempre ligado desde o início - não passa por setOverlayState() como os
     // outros dois, que começam desligados até o usuário (Ctrl+Shift+Alt+S)
     // ou o próprio app (toasts de status) ligarem.
@@ -163,8 +163,8 @@ void OverlayManager::notifyOverlayUpdated(OverlayType type)
                                           m_Overlays[type].text,
                                           m_Overlays[type].color,
                                           {0x26, 0x26, 0x26, 0xE6},
-                                          10,
-                                          6)
+                                          6,
+                                          3)
                 // The _Wrapped variant is required for line breaks to work
                 : RenderTextOutlinedWrapped(m_Overlays[type].font,
                                           m_Overlays[type].text,

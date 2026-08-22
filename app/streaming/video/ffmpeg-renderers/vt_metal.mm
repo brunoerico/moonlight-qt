@@ -539,8 +539,8 @@ public:
                     renderRect.y = m_LastDrawableHeight - overlayTexture.height;
                 }
                 else if (i == Overlay::OverlayMinimalStats) {
-                    // Top right
-                    renderRect.x = m_LastDrawableWidth - overlayTexture.width;
+                    // Top left
+                    renderRect.x = 0;
                     renderRect.y = m_LastDrawableHeight - overlayTexture.height;
                 }
 

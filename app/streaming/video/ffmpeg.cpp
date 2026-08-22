@@ -851,14 +851,16 @@ void FFmpegVideoDecoder::stringifyMinimalStats(VIDEO_STATS& stats, char* output,
 
     char pingString[24];
     if (stats.lastRtt != 0) {
-        snprintf(pingString, sizeof(pingString), "%u ms", stats.lastRtt);
+        snprintf(pingString, sizeof(pingString), "%ums", stats.lastRtt);
     }
     else {
         snprintf(pingString, sizeof(pingString), "N/A");
     }
 
+    // Sem rótulos ("FPS:", "Ping:", ...) de propósito - HUD minimalista,
+    // a ordem fixa já ensina o que é cada valor depois de olhar uma vez.
     snprintf(output, length,
-             "FPS: %.0f   Ping: %s   Bitrate: %.1f Mbps   Codec: %s",
+             "%.0ffps \xc2\xb7 %s \xc2\xb7 %.1fMbps \xc2\xb7 %s",
              stats.totalFps,
              pingString,
              m_BwTracker.GetAverageMbps(),

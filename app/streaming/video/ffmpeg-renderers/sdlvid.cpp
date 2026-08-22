@@ -247,10 +247,8 @@ void SdlRenderer::renderOverlay(Overlay::OverlayType type)
                 m_OverlayRects[type].y = 0;
             }
             else if (type == Overlay::OverlayMinimalStats) {
-                // Top right
-                SDL_Rect viewportRect;
-                SDL_RenderGetViewport(m_Renderer, &viewportRect);
-                m_OverlayRects[type].x = viewportRect.w - newSurface->w;
+                // Top left
+                m_OverlayRects[type].x = 0;
                 m_OverlayRects[type].y = 0;
             }
 
