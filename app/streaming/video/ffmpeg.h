@@ -52,6 +52,13 @@ private:
 
     void stringifyVideoStats(VIDEO_STATS& stats, char* output, int length);
 
+    // HUD minimalista sempre ativo (FPS/ping/bitrate/codec) - versão
+    // compacta de uma linha só, independente do painel completo do
+    // Ctrl+Shift+Alt+S (stringifyVideoStats acima).
+    void stringifyMinimalStats(VIDEO_STATS& stats, char* output, int length);
+
+    const char* getCodecDisplayName();
+
     void logVideoStats(VIDEO_STATS& stats, const char* title);
 
     void addVideoStats(VIDEO_STATS& src, VIDEO_STATS& dst);

@@ -10,6 +10,12 @@ namespace Overlay {
 enum OverlayType {
     OverlayDebug,
     OverlayStatusUpdate,
+
+    // HUD minimalista (FPS/ping/bitrate/codec) sempre ativo, ao contrário
+    // do OverlayDebug (só liga via Ctrl+Shift+Alt+S) - LanHouse pediu algo
+    // permanente na tela, no estilo do que aparece no ambiente WebRTC.
+    OverlayMinimalStats,
+
     OverlayMax
 };
 
@@ -42,6 +48,7 @@ public:
 private:
     void notifyOverlayUpdated(OverlayType type);
     SDL_Surface* RenderTextOutlinedWrapped(TTF_Font* font, const char* text, SDL_Color textColor, SDL_Color outlineColor, int outlineWidth, int wrapWidth);
+    SDL_Surface* RenderTextWithBackground(TTF_Font* font, const char* text, SDL_Color textColor, SDL_Color bgColor, int paddingX, int paddingY);
 
     struct {
         bool enabled;

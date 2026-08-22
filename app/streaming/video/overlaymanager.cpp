@@ -15,6 +15,13 @@ OverlayManager::OverlayManager() :
     m_Overlays[OverlayType::OverlayStatusUpdate].color = {0xCC, 0x00, 0x00, 0xFF};
     m_Overlays[OverlayType::OverlayStatusUpdate].fontSize = 36;
 
+    m_Overlays[OverlayType::OverlayMinimalStats].color = {0xFF, 0xFF, 0xFF, 0xFF};
+    m_Overlays[OverlayType::OverlayMinimalStats].fontSize = 18;
+    // Sempre ligado desde o início - não passa por setOverlayState() como os
+    // outros dois, que começam desligados até o usuário (Ctrl+Shift+Alt+S)
+    // ou o próprio app (toasts de status) ligarem.
+    m_Overlays[OverlayType::OverlayMinimalStats].enabled = true;
+
     // While TTF will usually not be initialized here, it is valid for that not to
     // be the case, since Session destruction is deferred and could overlap with
     // the lifetime of a new Session object.
@@ -148,13 +155,23 @@ void OverlayManager::notifyOverlayUpdated(OverlayType type)
     SDL_Surface* oldSurface = (SDL_Surface*)SDL_AtomicSetPtr(
         (void**)&m_Overlays[type].surface,
         m_Overlays[type].enabled ?
-            // The _Wrapped variant is required for line breaks to work
-            RenderTextOutlinedWrapped(m_Overlays[type].font,
-                                      m_Overlays[type].text,
-                                      m_Overlays[type].color,
-                                      {0, 0, 0, 255},
-                                      4,
-                                      1024)
+            (type == OverlayType::OverlayMinimalStats ?
+                // HUD minimalista: chip com fundo sólido em vez de texto
+                // com contorno - fica legível sobre qualquer cena do jogo
+                // sem precisar do contorno grosso usado pelos outros dois.
+                RenderTextWithBackground(m_Overlays[type].font,
+                                          m_Overlays[type].text,
+                                          m_Overlays[type].color,
+                                          {0x26, 0x26, 0x26, 0xE6},
+                                          10,
+                                          6)
+                // The _Wrapped variant is required for line breaks to work
+                : RenderTextOutlinedWrapped(m_Overlays[type].font,
+                                          m_Overlays[type].text,
+                                          m_Overlays[type].color,
+                                          {0, 0, 0, 255},
+                                          4,
+                                          1024))
             : nullptr);
 
     // Notify the renderer
@@ -208,4 +225,35 @@ SDL_Surface* OverlayManager::RenderTextOutlinedWrapped(TTF_Font* font, const cha
     return outlineSurface;
 }
 
+SDL_Surface* OverlayManager::RenderTextWithBackground(TTF_Font* font, const char* text, SDL_Color textColor, SDL_Color bgColor, int paddingX, int paddingY) {
+    if (text == nullptr || text[0] == '\0') {
+        return nullptr;
+    }
+
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended(font, text, textColor);
+    if (textSurface == nullptr) {
+        return nullptr;
+    }
+
+    SDL_Surface* cardSurface = SDL_CreateRGBSurfaceWithFormat(0,
+                                                               textSurface->w + paddingX * 2,
+                                                               textSurface->h + paddingY * 2,
+                                                               32,
+                                                               SDL_PIXELFORMAT_RGBA32);
+    if (cardSurface == nullptr) {
+        SDL_FreeSurface(textSurface);
+        return nullptr;
+    }
+
+    SDL_FillRect(cardSurface, nullptr, SDL_MapRGBA(cardSurface->format, bgColor.r, bgColor.g, bgColor.b, bgColor.a));
+
+    // textSurface already carries per-pixel alpha from TTF_RenderUTF8_Blended,
+    // so this blit alpha-blends the glyph edges against the background chip
+    // (rather than stamping jagged pixels) with no extra blend mode setup.
+    SDL_Rect dst = { paddingX, paddingY, textSurface->w, textSurface->h };
+    SDL_BlitSurface(textSurface, nullptr, cardSurface, &dst);
+
+    SDL_FreeSurface(textSurface);
+    return cardSurface;
+}
 

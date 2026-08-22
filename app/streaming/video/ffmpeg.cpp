@@ -802,82 +802,77 @@ void FFmpegVideoDecoder::addVideoStats(VIDEO_STATS& src, VIDEO_STATS& dst)
     dst.renderedFps     = (double)dst.renderedFrames / timeDiffSecs;
 }
 
+const char* FFmpegVideoDecoder::getCodecDisplayName()
+{
+    switch (m_VideoFormat)
+    {
+    case VIDEO_FORMAT_H264:
+        return "H.264";
+
+    case VIDEO_FORMAT_H264_HIGH8_444:
+        return "H.264 4:4:4";
+
+    case VIDEO_FORMAT_H265:
+        return "HEVC";
+
+    case VIDEO_FORMAT_H265_REXT8_444:
+        return "HEVC 4:4:4";
+
+    case VIDEO_FORMAT_H265_MAIN10:
+        return LiGetCurrentHostDisplayHdrMode() ? "HEVC 10-bit HDR" : "HEVC 10-bit SDR";
+
+    case VIDEO_FORMAT_H265_REXT10_444:
+        return LiGetCurrentHostDisplayHdrMode() ? "HEVC 10-bit HDR 4:4:4" : "HEVC 10-bit SDR 4:4:4";
+
+    case VIDEO_FORMAT_AV1_MAIN8:
+        return "AV1";
+
+    case VIDEO_FORMAT_AV1_HIGH8_444:
+        return "AV1 4:4:4";
+
+    case VIDEO_FORMAT_AV1_MAIN10:
+        return LiGetCurrentHostDisplayHdrMode() ? "AV1 10-bit HDR" : "AV1 10-bit SDR";
+
+    case VIDEO_FORMAT_AV1_HIGH10_444:
+        return LiGetCurrentHostDisplayHdrMode() ? "AV1 10-bit HDR 4:4:4" : "AV1 10-bit SDR 4:4:4";
+
+    default:
+        SDL_assert(false);
+        return "UNKNOWN";
+    }
+}
+
+void FFmpegVideoDecoder::stringifyMinimalStats(VIDEO_STATS& stats, char* output, int length)
+{
+    if (stats.receivedFps <= 0) {
+        output[0] = 0;
+        return;
+    }
+
+    char pingString[24];
+    if (stats.lastRtt != 0) {
+        snprintf(pingString, sizeof(pingString), "%u ms", stats.lastRtt);
+    }
+    else {
+        snprintf(pingString, sizeof(pingString), "N/A");
+    }
+
+    snprintf(output, length,
+             "FPS: %.0f   Ping: %s   Bitrate: %.1f Mbps   Codec: %s",
+             stats.totalFps,
+             pingString,
+             m_BwTracker.GetAverageMbps(),
+             getCodecDisplayName());
+}
+
 void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, int length)
 {
     int offset = 0;
-    const char* codecString;
+    const char* codecString = getCodecDisplayName();
     int ret;
 
     // Start with an empty string
     output[offset] = 0;
-
-    switch (m_VideoFormat)
-    {
-    case VIDEO_FORMAT_H264:
-        codecString = "H.264";
-        break;
-
-    case VIDEO_FORMAT_H264_HIGH8_444:
-        codecString = "H.264 4:4:4";
-        break;
-
-    case VIDEO_FORMAT_H265:
-        codecString = "HEVC";
-        break;
-
-    case VIDEO_FORMAT_H265_REXT8_444:
-        codecString = "HEVC 4:4:4";
-        break;
-
-    case VIDEO_FORMAT_H265_MAIN10:
-        if (LiGetCurrentHostDisplayHdrMode()) {
-            codecString = "HEVC 10-bit HDR";
-        }
-        else {
-            codecString = "HEVC 10-bit SDR";
-        }
-        break;
-
-    case VIDEO_FORMAT_H265_REXT10_444:
-        if (LiGetCurrentHostDisplayHdrMode()) {
-            codecString = "HEVC 10-bit HDR 4:4:4";
-        }
-        else {
-            codecString = "HEVC 10-bit SDR 4:4:4";
-        }
-        break;
-
-    case VIDEO_FORMAT_AV1_MAIN8:
-        codecString = "AV1";
-        break;
-
-    case VIDEO_FORMAT_AV1_HIGH8_444:
-        codecString = "AV1 4:4:4";
-        break;
-
-    case VIDEO_FORMAT_AV1_MAIN10:
-        if (LiGetCurrentHostDisplayHdrMode()) {
-            codecString = "AV1 10-bit HDR";
-        }
-        else {
-            codecString = "AV1 10-bit SDR";
-        }
-        break;
-
-    case VIDEO_FORMAT_AV1_HIGH10_444:
-        if (LiGetCurrentHostDisplayHdrMode()) {
-            codecString = "AV1 10-bit HDR 4:4:4";
-        }
-        else {
-            codecString = "AV1 10-bit SDR 4:4:4";
-        }
-        break;
-
-    default:
-        SDL_assert(false);
-        codecString = "UNKNOWN";
-        break;
-    }
 
     if (stats.receivedFps > 0) {
         if (m_VideoDecoderCtx != nullptr) {
@@ -2052,16 +2047,28 @@ int FFmpegVideoDecoder::submitDecodeUnit(PDECODE_UNIT du)
 
     // Flip stats windows roughly every second
     if (LiGetMicroseconds() > m_ActiveWndVideoStats.measurementStartUs + 1000000) {
-        // Update overlay stats if it's enabled
-        if (Session::get()->getOverlayManager().isOverlayEnabled(Overlay::OverlayDebug)) {
+        // Update overlay stats if either the full debug panel (Ctrl+Shift+Alt+S)
+        // or the always-on minimal HUD is enabled
+        bool debugOverlayEnabled = Session::get()->getOverlayManager().isOverlayEnabled(Overlay::OverlayDebug);
+        bool minimalOverlayEnabled = Session::get()->getOverlayManager().isOverlayEnabled(Overlay::OverlayMinimalStats);
+        if (debugOverlayEnabled || minimalOverlayEnabled) {
             VIDEO_STATS lastTwoWndStats = {};
             addVideoStats(m_LastWndVideoStats, lastTwoWndStats);
             addVideoStats(m_ActiveWndVideoStats, lastTwoWndStats);
 
-            stringifyVideoStats(lastTwoWndStats,
-                                Session::get()->getOverlayManager().getOverlayText(Overlay::OverlayDebug),
-                                Session::get()->getOverlayManager().getOverlayMaxTextLength());
-            Session::get()->getOverlayManager().setOverlayTextUpdated(Overlay::OverlayDebug);
+            if (debugOverlayEnabled) {
+                stringifyVideoStats(lastTwoWndStats,
+                                    Session::get()->getOverlayManager().getOverlayText(Overlay::OverlayDebug),
+                                    Session::get()->getOverlayManager().getOverlayMaxTextLength());
+                Session::get()->getOverlayManager().setOverlayTextUpdated(Overlay::OverlayDebug);
+            }
+
+            if (minimalOverlayEnabled) {
+                stringifyMinimalStats(lastTwoWndStats,
+                                    Session::get()->getOverlayManager().getOverlayText(Overlay::OverlayMinimalStats),
+                                    Session::get()->getOverlayManager().getOverlayMaxTextLength());
+                Session::get()->getOverlayManager().setOverlayTextUpdated(Overlay::OverlayMinimalStats);
+            }
         }
 
         // Accumulate these values into the global stats
