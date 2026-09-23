@@ -6,6 +6,11 @@
 
 void SdlInputHandler::handleMouseButtonEvent(SDL_MouseButtonEvent* event)
 {
+    // LanHouse: com o menu aberto o mouse não vai pro jogo.
+    if (m_LanhouseMenuOpen) {
+        return;
+    }
+
     int button;
 
     touchActivity();
@@ -72,6 +77,11 @@ void SdlInputHandler::handleMouseButtonEvent(SDL_MouseButtonEvent* event)
 
 void SdlInputHandler::handleMouseMotionEvent(SDL_MouseMotionEvent* event)
 {
+    // LanHouse: com o menu aberto o mouse não vai pro jogo.
+    if (m_LanhouseMenuOpen) {
+        return;
+    }
+
     touchActivity();
 
     if (!isCaptureActive()) {
@@ -162,6 +172,11 @@ void SdlInputHandler::handleMouseMotionEvent(SDL_MouseMotionEvent* event)
 
 void SdlInputHandler::handleMouseWheelEvent(SDL_MouseWheelEvent* event)
 {
+    // LanHouse: com o menu aberto o mouse não vai pro jogo.
+    if (m_LanhouseMenuOpen) {
+        return;
+    }
+
     touchActivity();
 
     if (!isCaptureActive()) {

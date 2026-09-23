@@ -1,5 +1,6 @@
 #include <Limelight.h>
 #include "ffmpeg.h"
+#include "../lanhouse/lanhousehud.h"
 #include "utils.h"
 #include "streaming/session.h"
 
@@ -849,22 +850,21 @@ void FFmpegVideoDecoder::stringifyMinimalStats(VIDEO_STATS& stats, char* output,
         return;
     }
 
-    char pingString[24];
-    if (stats.lastRtt != 0) {
-        snprintf(pingString, sizeof(pingString), "%ums", stats.lastRtt);
-    }
-    else {
-        snprintf(pingString, sizeof(pingString), "N/A");
-    }
+    // LanHouse - mesmo HUD da TV e do navegador (formato em lanhousehud.h):
+    // resolução recebida, fps decodificado (não o total, que conta quadro
+    // perdido na rede), RTT, taxa recebida, codec curto e minutos restantes.
+    char codec[24];
+    LanhouseHud::shortCodecName(getCodecDisplayName(), codec, sizeof(codec));
 
-    // Sem rótulos ("FPS:", "Ping:", ...) de propósito - HUD minimalista,
-    // a ordem fixa já ensina o que é cada valor depois de olhar uma vez.
-    snprintf(output, length,
-             "%.0ffps \xc2\xb7 %s \xc2\xb7 %.1fMbps \xc2\xb7 %s",
-             stats.totalFps,
-             pingString,
-             m_BwTracker.GetAverageMbps(),
-             getCodecDisplayName());
+    int width = m_VideoDecoderCtx != nullptr ? m_VideoDecoderCtx->width : 0;
+    int height = m_VideoDecoderCtx != nullptr ? m_VideoDecoderCtx->height : 0;
+
+    LanhouseHud::formatHudLine(output, length, width, height,
+                               stats.decodedFps,
+                               stats.lastRtt != 0 ? (int)stats.lastRtt : -1,
+                               m_BwTracker.GetAverageMbps(),
+                               codec,
+                               LanhouseHud::getMinutes());
 }
 
 void FFmpegVideoDecoder::stringifyVideoStats(VIDEO_STATS& stats, char* output, int length)

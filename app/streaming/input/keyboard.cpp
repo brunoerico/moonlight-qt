@@ -187,6 +187,11 @@ void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
 {
     touchActivity();
 
+    // LanHouse: atalho do menu do jogo e navegação dentro dele.
+    if (lanhouseHandleMenuKey(event)) {
+        return;
+    }
+
     short keyCode;
     char modifiers;
     bool shouldNotConvertToScanCodeOnServer = false;

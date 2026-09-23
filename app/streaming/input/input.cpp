@@ -55,7 +55,13 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
       m_RightButtonReleaseTimer(0),
       m_DragTimer(0),
       m_DragButton(0),
-      m_NumFingersDown(0)
+      m_NumFingersDown(0),
+      m_LanhouseMenuOpen(false),
+      m_LanhouseMenuSelected(0),
+      m_LanhouseMenuController(0),
+      m_LanhouseComboController(2),
+      m_LanhouseSuppressMKeyUp(false),
+      m_LanhouseComboTimer(0)
 {
     // Start the idle clock fresh for this session rather than reporting a
     // huge idle time before the first real input arrives.
@@ -264,6 +270,7 @@ SdlInputHandler::~SdlInputHandler()
     SDL_RemoveTimer(m_LeftButtonReleaseTimer);
     SDL_RemoveTimer(m_RightButtonReleaseTimer);
     SDL_RemoveTimer(m_DragTimer);
+    SDL_RemoveTimer(m_LanhouseComboTimer);
 
 #if !SDL_VERSION_ATLEAST(2, 0, 9)
     SDL_QuitSubSystem(SDL_INIT_HAPTIC);
@@ -486,6 +493,11 @@ void SdlInputHandler::setCaptureActive(bool active)
 void SdlInputHandler::handleTouchFingerEvent(SDL_TouchFingerEvent* event)
 {
     touchActivity();
+
+    // LanHouse: com o menu aberto o toque não vai pro jogo.
+    if (m_LanhouseMenuOpen) {
+        return;
+    }
 
 #if SDL_VERSION_ATLEAST(2, 0, 10)
     if (SDL_GetTouchDeviceType(event->touchId) != SDL_TOUCH_DEVICE_DIRECT) {

@@ -669,8 +669,13 @@ void DXVA2Renderer::notifyOverlayUpdated(Overlay::OverlayType type)
         renderRect.y = 0;
     }
     else if (type == Overlay::OverlayMinimalStats) {
-        // Top left
-        renderRect.x = 0;
+        // Top left, com margem (HUD LanHouse)
+        renderRect.x = 20;
+        renderRect.y = 14;
+    }
+    else if (type == Overlay::OverlayMenu) {
+        // Painel do menu LanHouse: colado na direita, altura total
+        renderRect.x = m_DisplayWidth - newSurface->w;
         renderRect.y = 0;
     }
 

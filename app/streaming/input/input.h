@@ -36,6 +36,9 @@ struct GamepadState {
 #endif
 
     int buttons;
+    // LanHouse: botões que NÃO devem ir pro jogo até serem soltos (o atalho
+    // do menu segurado, ou o que estava apertado quando o menu fechou).
+    int lanhouseMask;
     short lsX, lsY;
     short rsX, rsY;
     unsigned char lt, rt;
@@ -83,6 +86,10 @@ struct DualSenseOutputReport{
 
 #define GAMEPAD_HAPTIC_SIMPLE_HIFREQ_MOTOR_WEIGHT 0.33
 #define GAMEPAD_HAPTIC_SIMPLE_LOWFREQ_MOTOR_WEIGHT 0.8
+
+// LanHouse: SDL_USEREVENT.code postado pelo timer do atalho do controle
+// (L1+R1+Start segurado) pra abrir o menu na thread principal.
+#define SDL_CODE_LANHOUSE_MENU_COMBO 106
 
 class SdlInputHandler
 {
@@ -174,6 +181,14 @@ public:
     static
     int getIdleSeconds();
 
+    // LanHouse: menu do jogo (Telemetria / Sair do jogo), o mesmo da TV e do
+    // navegador. Abre com Ctrl+Alt+M (Ctrl+Option+M no Mac) ou com
+    // L1+R1+Start (LB+RB+Menu) segurado por 3s. Ver lanhousemenu.cpp.
+    bool isLanhouseMenuOpen() const { return m_LanhouseMenuOpen.load(); }
+
+    // Chamado na thread principal quando o timer do atalho do controle dispara.
+    void lanhouseOpenMenuFromGamepad();
+
 private:
     enum KeyCombo {
         KeyComboQuit,
@@ -206,6 +221,19 @@ private:
     void handleRelativeFingerEvent(SDL_TouchFingerEvent* event);
 
     void performSpecialKeyCombo(KeyCombo combo);
+
+    // LanHouse (lanhousemenu.cpp). Os handlers devolvem true quando consumiram
+    // o evento (ele não deve ir pro jogo).
+    bool lanhouseHandleMenuKey(SDL_KeyboardEvent* event);
+    bool lanhouseHandleMenuButton(SDL_ControllerButtonEvent* event, GamepadState* state);
+    void lanhouseUpdateComboHold(GamepadState* state);
+    void lanhouseOpenMenu(int controllerKind);
+    void lanhouseCloseMenu();
+    void lanhouseRefreshMenu();
+    void lanhouseMenuMove(int delta);
+    void lanhouseMenuActivate();
+    static
+    Uint32 lanhouseComboTimerCallback(Uint32 interval, void* param);
 
     static
     Uint32 longPressTimerCallback(Uint32 interval, void* param);
@@ -280,6 +308,13 @@ private:
     SDL_TimerID m_DragTimer;
     char m_DragButton;
     int m_NumFingersDown;
+
+    std::atomic<bool> m_LanhouseMenuOpen;
+    int m_LanhouseMenuSelected;
+    int m_LanhouseMenuController; // 0 teclado, 1 PlayStation, 2 Xbox
+    int m_LanhouseComboController;
+    bool m_LanhouseSuppressMKeyUp;
+    SDL_TimerID m_LanhouseComboTimer;
 
     static const int k_ButtonMap[];
 

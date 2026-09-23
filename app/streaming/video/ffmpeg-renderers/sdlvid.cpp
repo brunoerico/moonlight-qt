@@ -247,8 +247,15 @@ void SdlRenderer::renderOverlay(Overlay::OverlayType type)
                 m_OverlayRects[type].y = 0;
             }
             else if (type == Overlay::OverlayMinimalStats) {
-                // Top left
-                m_OverlayRects[type].x = 0;
+                // Top left, com margem (HUD LanHouse)
+                m_OverlayRects[type].x = 20;
+                m_OverlayRects[type].y = 14;
+            }
+            else if (type == Overlay::OverlayMenu) {
+                // Painel do menu LanHouse: colado na direita, altura total
+                SDL_Rect viewportRect;
+                SDL_RenderGetViewport(m_Renderer, &viewportRect);
+                m_OverlayRects[type].x = viewportRect.w - newSurface->w;
                 m_OverlayRects[type].y = 0;
             }
 

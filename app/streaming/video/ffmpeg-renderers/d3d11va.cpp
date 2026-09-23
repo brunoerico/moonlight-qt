@@ -1174,8 +1174,13 @@ bool D3D11VARenderer::createOverlayVertexBuffer(Overlay::OverlayType type, int w
         renderRect.y = m_DisplayHeight - height;
     }
     else if (type == Overlay::OverlayMinimalStats) {
-        // Top left
-        renderRect.x = 0;
+        // Top left, com margem (HUD LanHouse)
+        renderRect.x = 20;
+        renderRect.y = m_DisplayHeight - height - 14;
+    }
+    else if (type == Overlay::OverlayMenu) {
+        // Painel do menu LanHouse: colado na direita, altura total
+        renderRect.x = m_DisplayWidth - width;
         renderRect.y = m_DisplayHeight - height;
     }
 

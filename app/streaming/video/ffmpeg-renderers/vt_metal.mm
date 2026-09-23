@@ -539,8 +539,13 @@ public:
                     renderRect.y = m_LastDrawableHeight - overlayTexture.height;
                 }
                 else if (i == Overlay::OverlayMinimalStats) {
-                    // Top left
-                    renderRect.x = 0;
+                    // Top left, com margem (HUD LanHouse)
+                    renderRect.x = 20;
+                    renderRect.y = m_LastDrawableHeight - overlayTexture.height - 14;
+                }
+                else if (i == Overlay::OverlayMenu) {
+                    // Painel do menu LanHouse: colado na direita, altura total
+                    renderRect.x = m_LastDrawableWidth - overlayTexture.width;
                     renderRect.y = m_LastDrawableHeight - overlayTexture.height;
                 }
 

@@ -1039,8 +1039,13 @@ void PlVkRenderer::renderFrame(AVFrame *frame)
                 overlayParts[i].dst.y0 = 0;
             }
             else if (i == Overlay::OverlayMinimalStats) {
-                // Top left
-                overlayParts[i].dst.x0 = 0;
+                // Top left, com margem (HUD LanHouse)
+                overlayParts[i].dst.x0 = 20;
+                overlayParts[i].dst.y0 = 14;
+            }
+            else if (i == Overlay::OverlayMenu) {
+                // Painel do menu LanHouse: colado na direita, altura total
+                overlayParts[i].dst.x0 = SDL_max(0, targetFrame.crop.x1 - overlayParts[i].src.x1);
                 overlayParts[i].dst.y0 = 0;
             }
             overlayParts[i].dst.x1 = overlayParts[i].dst.x0 + overlayParts[i].src.x1;

@@ -196,6 +196,7 @@ SOURCES += \
     streaming/input/gamepad.cpp \
     streaming/input/input.cpp \
     streaming/input/keyboard.cpp \
+    streaming/input/lanhousemenu.cpp \
     streaming/input/mouse.cpp \
     streaming/input/reltouch.cpp \
     streaming/session.cpp \
@@ -210,6 +211,8 @@ SOURCES += \
     settings/mappingmanager.cpp \
     gui/sdlgamepadkeynavigation.cpp \
     streaming/video/overlaymanager.cpp \
+    streaming/lanhouse/lanhousehud.cpp \
+    streaming/lanhouse/lanhousecommands.cpp \
     backend/systemproperties.cpp \
     wm.cpp
 
@@ -249,6 +252,8 @@ HEADERS += \
     settings/mappingmanager.h \
     gui/sdlgamepadkeynavigation.h \
     streaming/video/overlaymanager.h \
+    streaming/lanhouse/lanhousehud.h \
+    streaming/lanhouse/lanhousecommands.h \
     backend/systemproperties.h
 
 # Platform-specific renderers and decoders

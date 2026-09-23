@@ -4,6 +4,7 @@
 #include "backend/computerseeker.h"
 #include "streaming/session.h"
 #include "streaming/input/input.h"
+#include "streaming/lanhouse/lanhousecommands.h"
 
 #include <QCoreApplication>
 #include <QTimer>
@@ -263,6 +264,8 @@ public:
         }
         sendHeartbeat(m_LiveSessionId);
         m_HeartbeatTimer->start();
+        // O wrapper manda os minutos restantes pelo stdin (HUD de telemetria).
+        LanhouseCommands::startStdinReader();
     }
 
     int getAppIndex() const

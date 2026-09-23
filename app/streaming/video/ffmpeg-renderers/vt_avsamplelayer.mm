@@ -401,6 +401,13 @@ public:
 
     void updateOverlayOnMainThread(Overlay::OverlayType type)
     { @autoreleasepool {
+        // O painel do menu LanHouse é uma imagem desenhada pelo OverlayManager;
+        // este renderer legado só sabe mostrar texto (o texto do menu é o
+        // modelo "selecionado|telemetria|controle", não algo pra exibir).
+        if (type == Overlay::OverlayMenu) {
+            return;
+        }
+
         // Lazy initialization for the overlay
         if (m_OverlayTextFields[type] == nullptr) {
             m_OverlayTextFields[type] = [[NSTextField alloc] initWithFrame:m_StreamView.bounds];

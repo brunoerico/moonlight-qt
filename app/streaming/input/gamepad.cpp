@@ -55,6 +55,12 @@ void SdlInputHandler::sendGamepadState(GamepadState* state)
 {
     SDL_assert(m_GamepadMask == 0x1 || m_MultiController);
 
+    // LanHouse: com o menu aberto o controle é do menu - o jogo vê tudo solto.
+    if (m_LanhouseMenuOpen) {
+        LiSendMultiControllerEvent(state->index, m_GamepadMask, 0, 0, 0, 0, 0, 0, 0);
+        return;
+    }
+
     // Handle Select+PS as the clickpad button on PS4/5 controllers without a clickpad mapping
     int buttons = state->buttons;
     if (state->clickpadButtonEmulationEnabled) {
@@ -68,6 +74,10 @@ void SdlInputHandler::sendGamepadState(GamepadState* state)
         }
     }
 
+    // LanHouse: não repassa o atalho do menu segurado nem o que estava
+    // apertado quando o menu fechou (ver lanhouseMask).
+    buttons &= ~state->lanhouseMask;
+
     unsigned char lt = state->lt;
     unsigned char rt = state->rt;
     short lsX = state->lsX;
@@ -79,7 +89,7 @@ void SdlInputHandler::sendGamepadState(GamepadState* state)
     if (!m_MultiController) {
         for (int i = 0; i < MAX_GAMEPADS; i++) {
             if (m_GamepadState[i].index == state->index) {
-                buttons |= m_GamepadState[i].buttons;
+                buttons |= m_GamepadState[i].buttons & ~m_GamepadState[i].lanhouseMask;
                 if (lt < m_GamepadState[i].lt) {
                     lt = m_GamepadState[i].lt;
                 }
@@ -253,6 +263,9 @@ void SdlInputHandler::handleControllerAxisEvent(SDL_ControllerAxisEvent* event)
         SDL_PeepEvents(&nextEvent, 1, SDL_GETEVENT, SDL_CONTROLLERAXISMOTION, SDL_CONTROLLERAXISMOTION);
     }
 
+    // LanHouse: L1+R1+Start segurado abre o menu do jogo.
+    lanhouseUpdateComboHold(state);
+
     // Only send the gamepad state to the host if it's not in mouse emulation mode
     if (state->mouseEmulationTimer == 0) {
         sendGamepadState(state);
@@ -272,6 +285,11 @@ void SdlInputHandler::handleControllerButtonEvent(SDL_ControllerButtonEvent* eve
 
     GamepadState* state = findStateForGamepad(event->which);
     if (state == NULL) {
+        return;
+    }
+
+    // LanHouse: menu do jogo aberto - navegação por D-pad/A/B, nada vai pro jogo.
+    if (lanhouseHandleMenuButton(event, state)) {
         return;
     }
 
@@ -330,9 +348,15 @@ void SdlInputHandler::handleControllerButtonEvent(SDL_ControllerButtonEvent* eve
     }
     else {
         state->buttons &= ~k_ButtonMap[event->button];
+        // LanHouse: botão solto deixa de estar bloqueado.
+        state->lanhouseMask &= state->buttons;
 
         if (event->button == SDL_CONTROLLER_BUTTON_START) {
-            if (SDL_GetTicks() - state->lastStartDownTime > MOUSE_EMULATION_LONG_PRESS_TIME) {
+            // LanHouse: Start segurado como parte do atalho do menu (L1+R1+Start,
+            // 3s) não é um "toque longo" - senão soltar antes dos 3s ligaria o
+            // modo mouse sem querer.
+            if (m_LanhouseComboTimer == 0 &&
+                    SDL_GetTicks() - state->lastStartDownTime > MOUSE_EMULATION_LONG_PRESS_TIME) {
                 if (state->mouseEmulationTimer != 0) {
                     SDL_RemoveTimer(state->mouseEmulationTimer);
                     state->mouseEmulationTimer = 0;

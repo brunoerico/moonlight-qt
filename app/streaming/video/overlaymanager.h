@@ -11,10 +11,19 @@ enum OverlayType {
     OverlayDebug,
     OverlayStatusUpdate,
 
-    // HUD minimalista (FPS/ping/bitrate/codec) sempre ativo, ao contrário
-    // do OverlayDebug (só liga via Ctrl+Shift+Alt+S) - LanHouse pediu algo
-    // permanente na tela, no estilo do que aparece no ambiente WebRTC.
+    // HUD de telemetria da LanHouse, igual na TV, no navegador e aqui:
+    //   1920x1080 · 60fps · 12ms · 25.3Mbps · HEVC · 87min
+    // Texto contornado, sem caixa, canto superior esquerdo. Começa DESLIGADO em
+    // toda sessão e só liga pelo menu do jogo (OverlayMenu) - ao contrário do
+    // OverlayDebug (Ctrl+Shift+Alt+S), que continua sendo o overlay verboso do
+    // Moonlight original.
     OverlayMinimalStats,
+
+    // Menu do jogo da LanHouse (painel lateral, canto superior direito): o
+    // texto do overlay é o modelo "selecionado|telemetriaLigada|controle"
+    // (ver input/lanhousemenu.cpp) e o painel inteiro é desenhado aqui,
+    // em SDL, pra ficar idêntico no macOS e no Windows.
+    OverlayMenu,
 
     OverlayMax
 };
@@ -48,7 +57,9 @@ public:
 private:
     void notifyOverlayUpdated(OverlayType type);
     SDL_Surface* RenderTextOutlinedWrapped(TTF_Font* font, const char* text, SDL_Color textColor, SDL_Color outlineColor, int outlineWidth, int wrapWidth);
-    SDL_Surface* RenderTextWithBackground(TTF_Font* font, const char* text, SDL_Color textColor, SDL_Color bgColor, int paddingX, int paddingY);
+    SDL_Surface* RenderLanhouseHud(TTF_Font* font, const char* text);
+    SDL_Surface* RenderLanhouseMenu(const char* model);
+    bool ensureLanhouseFonts();
 
     struct {
         bool enabled;
@@ -61,6 +72,13 @@ private:
     } m_Overlays[OverlayMax];
     IOverlayRenderer* m_Renderer;
     QByteArray m_FontData;
+
+    // Barlow (a mesma fonte do site e da TV) pro HUD e o menu da LanHouse. Os
+    // bytes precisam ficar vivos enquanto as fontes estiverem abertas.
+    QByteArray m_BarlowSemiBoldData;
+    QByteArray m_BarlowBoldData;
+    // 0 título do menu, 1 título de linha, 2 detalhe, 3 pequeno
+    TTF_Font* m_LanhouseFonts[4];
 };
 
 }
