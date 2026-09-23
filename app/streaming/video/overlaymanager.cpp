@@ -361,7 +361,7 @@ SDL_Surface* OverlayManager::RenderLanhouseHud(TTF_Font* font, const char* text)
     // pra o trecho de minutos ficar colado no separador, sem vão.
     int overlap = 2 * outline;
     SDL_Surface* merged = SDL_CreateRGBSurfaceWithFormat(0, head->w + tail->w - overlap,
-                                                         std::max(head->h, tail->h), 32, SDL_PIXELFORMAT_RGBA32);
+                                                         std::max(head->h, tail->h), 32, SDL_PIXELFORMAT_ARGB8888);
     if (merged != nullptr) {
         SDL_SetSurfaceBlendMode(head, SDL_BLENDMODE_BLEND);
         SDL_SetSurfaceBlendMode(tail, SDL_BLENDMODE_BLEND);
@@ -449,7 +449,10 @@ SDL_Surface* OverlayManager::RenderLanhouseMenu(const char* model)
     int panelH = padTop + headerH + 26 + rowHeight[0] + rowGap + rowHeight[1] + 22 +
                  (warn ? warn->h : 0) + 20 + 1 + 16 + (hint ? hint->h : 0) + padBottom;
 
-    SDL_Surface* panel = SDL_CreateRGBSurfaceWithFormat(0, panelW, panelH, 32, SDL_PIXELFORMAT_RGBA32);
+    // ARGB8888 (não RGBA32): é o formato que os renderers esperam dos overlays
+    // (mesmo das superfícies do SDL_ttf) - Metal/D3D11 leem a textura como BGRA,
+    // e com RGBA32 o vermelho saía azul.
+    SDL_Surface* panel = SDL_CreateRGBSurfaceWithFormat(0, panelW, panelH, 32, SDL_PIXELFORMAT_ARGB8888);
     if (panel != nullptr) {
         SDL_SetSurfaceBlendMode(panel, SDL_BLENDMODE_BLEND);
         SDL_FillRect(panel, nullptr, SDL_MapRGBA(panel->format, panelBg.r, panelBg.g, panelBg.b, panelBg.a));
