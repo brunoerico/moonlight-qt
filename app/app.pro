@@ -171,6 +171,13 @@ macx {
     QMAKE_CXXFLAGS += -include arm_acle.h
 }
 
+# LanHouse: os textos do HUD e do menu (lanhousehud.cpp, overlaymanager.cpp) são
+# literais UTF-8 com acento, "·", "—" e "∞". O MSVC lê o fonte na página de
+# código do sistema se não for avisado - com isso "resolução" viraria lixo.
+win32-msvc {
+    QMAKE_CXXFLAGS += /utf-8
+}
+
 SOURCES += \
     backend/nvaddress.cpp \
     backend/nvapp.cpp \
