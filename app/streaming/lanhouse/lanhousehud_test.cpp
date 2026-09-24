@@ -63,6 +63,13 @@ int main()
     Minutes m = getMinutes();
     expectInt("estado compartilhado guarda ilimitado", m.known && m.unlimited, 1);
 
+    Quality q0 = getQuality();
+    expectInt("qualidade começa como não medida", q0.rttMs < 0 && q0.mbps < 0 && q0.fps < 0, 1);
+    setQuality(12, 25.3, 59.9);
+    Quality q1 = getQuality();
+    expectInt("qualidade guarda rtt", q1.rttMs, 12);
+    expectInt("qualidade guarda mbps e fps", q1.mbps == 25.3 && q1.fps == 59.9, 1);
+
     printf(g_Failures == 0 ? "\nTODOS OS TESTES PASSARAM\n" : "\n%d FALHA(S)\n", g_Failures);
     return g_Failures == 0 ? 0 : 1;
 }

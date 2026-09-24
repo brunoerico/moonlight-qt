@@ -13,6 +13,9 @@ namespace {
 std::mutex s_MinutesLock;
 LanhouseHud::Minutes s_Minutes;
 
+std::mutex s_QualityLock;
+LanhouseHud::Quality s_Quality;
+
 // Caracteres fora do ASCII escritos em UTF-8 pra o arquivo não depender da
 // codificação do compilador (o SDL_ttf recebe UTF-8).
 const char* const kDash = "\xE2\x80\x94";      // U+2014 "—"
@@ -30,6 +33,20 @@ std::string upper(const char* s)
 }
 
 namespace LanhouseHud {
+
+void setQuality(int rttMs, double mbps, double fps)
+{
+    std::lock_guard<std::mutex> guard(s_QualityLock);
+    s_Quality.rttMs = rttMs;
+    s_Quality.mbps = mbps;
+    s_Quality.fps = fps;
+}
+
+Quality getQuality()
+{
+    std::lock_guard<std::mutex> guard(s_QualityLock);
+    return s_Quality;
+}
 
 void setMinutes(bool known, bool unlimited, double minutes)
 {

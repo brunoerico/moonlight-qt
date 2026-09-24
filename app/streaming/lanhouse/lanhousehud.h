@@ -26,6 +26,18 @@ struct Minutes {
 void setMinutes(bool known, bool unlimited, double minutes);
 Minutes getMinutes();
 
+// Última medição da conexão (latência, taxa recebida, fps decodificado), gravada
+// pelo decoder de vídeo a cada segundo de stream e lida pelo heartbeat da sessão
+// (cli/lanhouseconnect.cpp), que a manda pro banco pra medir a qualidade de cada
+// sessão. Valores negativos = ainda não medido. Independe do HUD estar ligado.
+struct Quality {
+    int rttMs = -1;
+    double mbps = -1;
+    double fps = -1;
+};
+void setQuality(int rttMs, double mbps, double fps);
+Quality getQuality();
+
 // "87min" (arredonda pra baixo: nunca prometer mais tempo do que resta),
 // "∞" no plano ilimitado, "—" enquanto não se sabe.
 void formatMinutes(const Minutes& m, char* out, size_t len);

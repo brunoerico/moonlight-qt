@@ -2049,6 +2049,20 @@ int FFmpegVideoDecoder::submitDecodeUnit(PDECODE_UNIT du)
 
     // Flip stats windows roughly every second
     if (LiGetMicroseconds() > m_ActiveWndVideoStats.measurementStartUs + 1000000) {
+        // LanHouse: guarda a última medição da conexão pro heartbeat da sessão
+        // reportar qualidade (latência/taxa/fps médios por sessão no banco), com o
+        // HUD ligado ou não.
+        {
+            VIDEO_STATS qualityStats = {};
+            addVideoStats(m_LastWndVideoStats, qualityStats);
+            addVideoStats(m_ActiveWndVideoStats, qualityStats);
+            if (qualityStats.receivedFps > 0) {
+                LanhouseHud::setQuality(qualityStats.lastRtt != 0 ? (int)qualityStats.lastRtt : -1,
+                                        m_BwTracker.GetAverageMbps(),
+                                        qualityStats.decodedFps);
+            }
+        }
+
         // Update overlay stats if either the full debug panel (Ctrl+Shift+Alt+S)
         // or the always-on minimal HUD is enabled
         bool debugOverlayEnabled = Session::get()->getOverlayManager().isOverlayEnabled(Overlay::OverlayDebug);

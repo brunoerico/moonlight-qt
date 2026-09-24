@@ -5,6 +5,7 @@
 #include "streaming/session.h"
 #include "streaming/input/input.h"
 #include "streaming/lanhouse/lanhousecommands.h"
+#include "streaming/lanhouse/lanhousehud.h"
 
 #include <QCoreApplication>
 #include <QTimer>
@@ -89,6 +90,19 @@ static void sendHeartbeat(const QString &liveSessionId)
     QJsonObject body;
     body["p_live_session_id"] = liveSessionId;
     body["p_idle_seconds"] = SdlInputHandler::getIdleSeconds();
+
+    // Tipo de cliente e qualidade da conexão, pra medir o uso por plataforma no
+    // banco (live_sessions.client_type / net_*). O banco valida os valores e o
+    // primeiro client_type informado vence.
+#if defined(Q_OS_MACOS)
+    body["p_client_type"] = "native_mac";
+#elif defined(Q_OS_WIN)
+    body["p_client_type"] = "native_windows";
+#endif
+    LanhouseHud::Quality quality = LanhouseHud::getQuality();
+    if (quality.rttMs >= 0) body["p_rtt_ms"] = quality.rttMs;
+    if (quality.mbps >= 0) body["p_bitrate_mbps"] = quality.mbps;
+    if (quality.fps >= 0) body["p_fps"] = quality.fps;
 
     QNetworkReply *reply = nam->post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
     QObject::connect(reply, &QNetworkReply::finished, [nam, reply]() {
