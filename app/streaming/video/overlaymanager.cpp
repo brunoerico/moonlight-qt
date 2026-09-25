@@ -13,8 +13,8 @@ using namespace Overlay;
 OverlayManager::OverlayManager() :
     m_Renderer(nullptr),
     m_FontData(Path::readDataFile("ModeSeven.ttf")),
-    m_BarlowSemiBoldData(Path::readDataFile("Barlow-SemiBold.ttf")),
-    m_BarlowBoldData(Path::readDataFile("Barlow-Bold.ttf"))
+    m_InterSemiBoldData(Path::readDataFile("Inter-SemiBold.ttf")),
+    m_InterBoldData(Path::readDataFile("Inter-Bold.ttf"))
 {
     memset(m_Overlays, 0, sizeof(m_Overlays));
     memset(m_LanhouseFonts, 0, sizeof(m_LanhouseFonts));
@@ -151,12 +151,12 @@ void OverlayManager::notifyOverlayUpdated(OverlayType type)
     }
 
     // Construct the required font to render the overlay. O menu da LanHouse
-    // desenha com as próprias fontes (ver RenderLanhouseMenu); o HUD usa Barlow
+    // desenha com as próprias fontes (ver RenderLanhouseMenu); o HUD usa Inter
     // quando ela está embutida, ModeSeven (a do Moonlight original) senão.
     if (type != OverlayType::OverlayMenu && m_Overlays[type].font == nullptr) {
         const QByteArray& fontData =
-            (type == OverlayType::OverlayMinimalStats && !m_BarlowSemiBoldData.isEmpty()) ?
-                m_BarlowSemiBoldData : m_FontData;
+            (type == OverlayType::OverlayMinimalStats && !m_InterSemiBoldData.isEmpty()) ?
+                m_InterSemiBoldData : m_FontData;
 
         if (fontData.isEmpty()) {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
@@ -289,23 +289,23 @@ bool OverlayManager::ensureLanhouseFonts()
     if (m_LanhouseFonts[0] != nullptr) {
         return true;
     }
-    if (m_BarlowBoldData.isEmpty() || m_BarlowSemiBoldData.isEmpty()) {
+    if (m_InterBoldData.isEmpty() || m_InterSemiBoldData.isEmpty()) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                     "Barlow overlay fonts failed to load");
+                     "Inter overlay fonts failed to load");
         return false;
     }
 
     struct { const QByteArray* data; int size; } specs[4] = {
-        { &m_BarlowBoldData, 44 },     // título "MENU"
-        { &m_BarlowBoldData, 27 },     // título de cada linha
-        { &m_BarlowSemiBoldData, 19 }, // detalhe da linha
-        { &m_BarlowSemiBoldData, 18 }, // texto pequeno (marca, aviso, atalhos, selo)
+        { &m_InterBoldData, 40 },     // título "MENU"
+        { &m_InterBoldData, 24 },     // título de cada linha
+        { &m_InterSemiBoldData, 18 }, // detalhe da linha
+        { &m_InterSemiBoldData, 17 }, // texto pequeno (marca, aviso, atalhos, selo)
     };
     for (int i = 0; i < 4; i++) {
         m_LanhouseFonts[i] = TTF_OpenFontRW(SDL_RWFromConstMem(specs[i].data->constData(), specs[i].data->size()),
                                             1, specs[i].size);
         if (m_LanhouseFonts[i] == nullptr) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "TTF_OpenFont(Barlow) failed: %s", TTF_GetError());
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "TTF_OpenFont(Inter) failed: %s", TTF_GetError());
             for (int j = 0; j < i; j++) {
                 TTF_CloseFont(m_LanhouseFonts[j]);
                 m_LanhouseFonts[j] = nullptr;
@@ -392,11 +392,14 @@ SDL_Surface* OverlayManager::RenderLanhouseMenu(const char* model)
     TTF_Font* detailFont = m_LanhouseFonts[2];
     TTF_Font* smallFont = m_LanhouseFonts[3];
 
-    const SDL_Color paper = {0xFC, 0xFA, 0xF7, 0xFF};
-    const SDL_Color muted = {0xCF, 0xC7, 0xC2, 0xFF};
-    const SDL_Color ink = {0x1B, 0x16, 0x14, 0xFF};
-    const SDL_Color red = {0xD6, 0x29, 0x1F, 0xFF};
-    const SDL_Color panelBg = {0x12, 0x0E, 0x0C, 0xEE};
+    // Paleta Ultra Violet + Amarelo ácido (2026-09-25; antes Ember Line vermelho): `red` continua sendo o
+    // nome interno da cor de seleção para não mexer no resto da função, mas agora é o violeta de ação.
+    const SDL_Color paper = {0xF7, 0xF5, 0xFC, 0xFF};
+    const SDL_Color muted = {0xCF, 0xC6, 0xF5, 0xFF};
+    const SDL_Color ink = {0x14, 0x0B, 0x2E, 0xFF};
+    const SDL_Color red = {0x4A, 0x12, 0xD6, 0xFF};
+    const SDL_Color yellow = {0xEF, 0xFF, 0x00, 0xFF};
+    const SDL_Color panelBg = {0x14, 0x0B, 0x2E, 0xEE};
 
     const int panelW = 580;
     const int padX = 36;
@@ -417,7 +420,7 @@ SDL_Surface* OverlayManager::RenderLanhouseMenu(const char* model)
         { "Sair do jogo", "Encerra a sessão e volta ao catálogo.", nullptr },
     };
 
-    // Atalhos do dispositivo em uso (Barlow não tem setas, então texto puro).
+    // Atalhos do dispositivo em uso (Inter não tem as setas usadas aqui, então texto puro).
     const char* hints = controller == 1 ? "D-pad navega    Cross confirma    Circle fecha"
                       : controller == 2 ? "D-pad navega    A confirma    B fecha"
                                         : "Setas navegam    Enter confirma    Esc fecha";
@@ -465,7 +468,7 @@ SDL_Surface* OverlayManager::RenderLanhouseMenu(const char* model)
         if (title != nullptr) {
             // Ponto vermelho depois do título (mesmo detalhe do menu da TV).
             int dot = 14;
-            fillRoundRect(panel, padX + title->w + 8, y + title->h - dot - 10, dot, dot, dot / 2, red);
+            fillRoundRect(panel, padX + title->w + 8, y + title->h - dot - 10, dot, dot, dot / 2, yellow);
         }
         if (brand != nullptr) {
             blitAt(panel, brand, panelW - padX - brand->w, y + headerH - brand->h - 6);

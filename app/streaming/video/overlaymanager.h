@@ -73,10 +73,10 @@ private:
     IOverlayRenderer* m_Renderer;
     QByteArray m_FontData;
 
-    // Barlow (a mesma fonte do site e da TV) pro HUD e o menu da LanHouse. Os
+    // Inter (a mesma fonte do site e da TV) pro HUD e o menu da LanHouse. Os
     // bytes precisam ficar vivos enquanto as fontes estiverem abertas.
-    QByteArray m_BarlowSemiBoldData;
-    QByteArray m_BarlowBoldData;
+    QByteArray m_InterSemiBoldData;
+    QByteArray m_InterBoldData;
     // 0 título do menu, 1 título de linha, 2 detalhe, 3 pequeno
     TTF_Font* m_LanhouseFonts[4];
 };
