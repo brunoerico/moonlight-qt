@@ -4,7 +4,8 @@ permissions:
 
 # Só o Windows x64 Release do fork, disparado à mão (Actions > Run workflow). O workflow original
 # (build.yml) compila tudo (Windows x64+arm64, macOS, AppImage, Steam Link) e é pesado demais para
-# validar uma troca de tema. Mesmos passos do build-win-mac.yml.
+# validar uma troca de tema. Mesmos passos do build-win-mac.yml, sem o pacote MSI (que exige também o ARM64):
+# o artefato é a pasta portátil deploy-x64-release (Moonlight.exe + DLLs do Qt).
 on:
   workflow_dispatch:
 
@@ -37,10 +38,6 @@ jobs:
           scripts\build-arch.bat Release x64
         env:
           QT_PATH: ${{ runner.workspace }}\Qt\6.11.1\msvc2022_64\bin
-
-      - name: Build Package
-        shell: cmd
-        run: scripts\generate-bundle.bat Release
 
       - name: Upload Binaries (Windows x64)
         uses: actions/upload-artifact@v6
