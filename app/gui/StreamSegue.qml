@@ -9,15 +9,26 @@ import SystemProperties 1.0
 Item {
     property Session session
     property string appName
-    property string stageText : isResume ? qsTr("Resuming %1...").arg(appName) :
-                                           qsTr("Starting %1...").arg(appName)
+    property string stageText : isResume ? qsTr("Retomando %1").arg(appName) :
+                                           qsTr("Iniciando %1").arg(appName)
     property bool isResume : false
     property bool quitAfter : false
+    // Onde a etapa "Abrir o jogo" da tela de carregamento parte (o
+    // LanhouseConnectSegue passa onde parou)
+    property real startProgress : 0.12
+    // moonlight-common-c emite 11 etapas (STAGE_PLATFORM_INIT até
+    // STAGE_INPUT_STREAM_START, Limelight.h) antes do primeiro quadro
+    readonly property int totalStages : 11
+    property int stagesSeen : 0
 
     function stageStarting(stage)
     {
-        // Update the spinner text
-        stageText = qsTr("Starting %1...").arg(stage)
+        // Etapas internas (RTSP, controle, vídeo...) não dizem nada ao
+        // cliente: o título fica "Iniciando <jogo>", a etapa só move a barra
+        // e vai pro log.
+        console.log("Starting " + stage)
+        stagesSeen = Math.min(stagesSeen + 1, totalStages)
+        loadingScreen.stepProgress = startProgress + (0.95 - startProgress) * stagesSeen / totalStages
     }
 
     function stageFailed(stage, errorCode, failingPorts)
@@ -34,9 +45,7 @@ Item {
     {
         // Hide the UI contents so the user doesn't
         // see them briefly when we pop off the StackView
-        stageSpinner.visible = false
-        stageLabel.visible = false
-        hintText.visible = false
+        loadingScreen.visible = false
 
         // Hide the window now that streaming has begun
         window.visible = false
@@ -139,7 +148,7 @@ Item {
         // middle of the animation on Windows, which looks very
         // obviously broken.
         interval: 100
-        onTriggered: stageSpinner.visible = true
+        onTriggered: loadingScreen.busy = true
     }
 
     Timer {
@@ -162,11 +171,15 @@ Item {
 
         onLoaded: {
             // Set the hint text. We do this here rather than
-            // in the hintText control itself to synchronize
+            // in the loading screen itself to synchronize
             // with Session.exec() which requires no concurrent
             // gamepad usage.
-            hintText.text = qsTr("Tip:") + " " + qsTr("Press %1 to disconnect your session").arg(SdlGamepadKeyNavigation.getConnectedGamepads() > 0 ?
-                                                  qsTr("Start+Select+L1+R1") : qsTr("Ctrl+Alt+Shift+Q"))
+            // Atalho do menu do jogo LanHouse (input/lanhousemenu.cpp), por
+            // onde o cliente liga a telemetria e sai do jogo.
+            var menuCombo = SdlGamepadKeyNavigation.getConnectedGamepads() > 0 ?
+                        qsTr("segure L1 + R1 + Start") :
+                        (Qt.platform.os === "osx" ? qsTr("pressione Ctrl + Option + M") : qsTr("pressione Ctrl + Alt + M"))
+            loadingScreen.hint = qsTr("Durante o jogo, %1 para abrir o menu").arg("<font color=\"#EDE8FF\"><b>" + menuCombo + "</b></font>")
 
             // Stop GUI gamepad usage now
             SdlGamepadKeyNavigation.disable()
@@ -208,35 +221,11 @@ Item {
         sourceComponent: Item {}
     }
 
-    Row {
-        anchors.centerIn: parent
-        spacing: 5
-
-        BusyIndicator {
-            id: stageSpinner
-            running: visible
-            visible: false
-        }
-
-        Label {
-            id: stageLabel
-            height: stageSpinner.height
-            text: stageText
-            font.pointSize: 20
-            verticalAlignment: Text.AlignVCenter
-
-            wrapMode: Text.Wrap
-        }
-    }
-
-    Label {
-        id: hintText
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 50
-        anchors.horizontalCenter: parent.horizontalCenter
-        font.pointSize: 18
-        verticalAlignment: Text.AlignVCenter
-
-        wrapMode: Text.Wrap
+    LanhouseLoadingScreen {
+        id: loadingScreen
+        title: stageText
+        busy: false
+        step: 2
+        stepProgress: startProgress
     }
 }

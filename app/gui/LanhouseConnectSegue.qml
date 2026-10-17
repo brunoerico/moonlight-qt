@@ -4,16 +4,25 @@ import QtQuick.Controls 2.2
 import ComputerManager 1.0
 
 Item {
+    // Etapas da tela de carregamento: 0 Conectar, 1 Liberar acesso (pareamento
+    // automático - pulada quando o host já está pareado), 2 Abrir o jogo (vai
+    // daqui até o primeiro quadro, já no StreamSegue).
     function onSearchingComputer() {
-        stageLabel.text = qsTr("Establishing connection to PC...")
+        loadingScreen.title = qsTr("Conectando ao servidor")
+        loadingScreen.step = 0
+        loadingScreen.stepProgress = 0.3
     }
 
     function onPairing() {
-        stageLabel.text = qsTr("Pairing automatically...")
+        loadingScreen.title = qsTr("Preparando seu acesso")
+        loadingScreen.step = 1
+        loadingScreen.stepProgress = 0.3
     }
 
     function onSearchingApp() {
-        stageLabel.text = qsTr("Loading app list...")
+        loadingScreen.title = qsTr("Abrindo seu jogo")
+        loadingScreen.step = 2
+        loadingScreen.stepProgress = 0.05
     }
 
     function onSessionCreated(appName, session) {
@@ -21,13 +30,16 @@ Item {
         var segue = component.createObject(stackView, {
             "appName": appName,
             "session": session,
-            "quitAfter": true
+            "quitAfter": true,
+            "startProgress": Math.max(loadingScreen.shownProgress, 0.12)
         })
-        stackView.push(segue)
+        // Sem animação de troca: as duas telas têm o mesmo fundo, então o
+        // cliente só vê o título mudar.
+        stackView.push(segue, {}, StackView.Immediate)
     }
 
     function onFailed(message) {
-        stageIndicator.visible = false
+        loadingScreen.visible = false
         errorDialog.text = message
         errorDialog.open()
         console.error(message)
@@ -65,24 +77,11 @@ Item {
         }
     }
 
-    Row {
-        anchors.centerIn: parent
-        spacing: 5
-        id: stageIndicator
-
-        BusyIndicator {
-            id: stageSpinner
-            running: visible
-        }
-
-        Label {
-            id: stageLabel
-            height: stageSpinner.height
-            font.pointSize: 20
-            verticalAlignment: Text.AlignVCenter
-
-            wrapMode: Text.Wrap
-        }
+    LanhouseLoadingScreen {
+        id: loadingScreen
+        title: qsTr("Conectando ao servidor")
+        step: 0
+        stepProgress: 0.1
     }
 
     ErrorMessageDialog {
