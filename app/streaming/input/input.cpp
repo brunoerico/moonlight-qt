@@ -304,58 +304,6 @@ void SdlInputHandler::setWindow(SDL_Window *window)
     m_Window = window;
 }
 
-void SdlInputHandler::raiseAllKeys()
-{
-    // Not folded into the m_KeysDown.isEmpty() early-return below: a focus
-    // loss (this function's caller, notifyFocusLost()) can happen while
-    // Escape is physically held but not yet in m_KeysDown's synthetic-release
-    // bookkeeping path, leaving the 10-second hold-to-quit timer (keyboard.cpp)
-    // running with no window focused to ever deliver the matching key-up that
-    // would normally cancel it - found live: a session was quit ~10s after an
-    // unrelated brief Escape tap coincided with a focus change, with nothing
-    // for the user to correlate it to.
-    if (m_EscHoldTimerId != 0) {
-        SDL_RemoveTimer(m_EscHoldTimerId);
-        m_EscHoldTimerId = 0;
-    }
-
-    if (m_KeysDown.isEmpty()) {
-        return;
-    }
-
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                "Raising %d keys",
-                (int)m_KeysDown.count());
-
-    for (auto keyDown : std::as_const(m_KeysDown)) {
-        LiSendKeyboardEvent(keyDown, KEY_ACTION_UP, 0);
-    }
-
-    m_KeysDown.clear();
-}
-
-void SdlInputHandler::notifyMouseLeave()
-{
-    if (m_NeedsManualCaptureOnLeave) {
-        // SDL on Windows doesn't send the mouse button up until the mouse re-enters the window
-        // after leaving it. This breaks some of the Aero snap gestures, so we'll capture it to
-        // allow us to receive the mouse button up events later.
-        //
-        // On macOS and X11, capturing the mouse allows us to receive mouse motion outside the
-        // window (button up already worked without capture).
-        if (m_AbsoluteMouseMode && isCaptureActive()) {
-            // NB: Not using SDL_GetGlobalMouseState() because we want our state not the system's
-            Uint32 mouseState = SDL_GetMouseState(nullptr, nullptr);
-            for (Uint32 button = SDL_BUTTON_LEFT; button <= SDL_BUTTON_X2; button++) {
-                if (mouseState & SDL_BUTTON(button)) {
-                    SDL_CaptureMouse(SDL_TRUE);
-                    break;
-                }
-            }
-        }
-    }
-}
-
 void SdlInputHandler::notifyFocusLost()
 {
     // Release mouse cursor when another window is activated (e.g. by using ALT+TAB).

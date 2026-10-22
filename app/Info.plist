@@ -21,7 +21,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>11.0.0</string>
+	<string>13.0.0</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
@@ -42,10 +42,14 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>LanHouse Native uses the local network to connect to your cloud gaming session.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_nvstream._tcp</string>
+	</array>
 	<key>CFBundleVersion</key>
-	<string>6.1.0</string>
+	<string>6.2.0</string>
 	<key>CFBundleShortVersionString</key>
-	<string>6.1.0</string>
+	<string>6.2.0</string>
 	<key>CFBundleDisplayName</key>
 	<string>LanHouse Native</string>
     <key>LSApplicationCategoryType</key>

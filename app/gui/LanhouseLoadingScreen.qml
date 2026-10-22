@@ -14,7 +14,7 @@ Rectangle {
 
     property string title: ""
     property string hint: ""
-    // false enquanto a animação não deve rodar (ver spinnerTimer no StreamSegue)
+    // false enquanto a animação não deve rodar (o StreamSegue liga depois do session.initialize())
     property bool busy: true
 
     property int step: 0
