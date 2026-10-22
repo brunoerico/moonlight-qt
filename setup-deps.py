@@ -4,18 +4,21 @@ import platform
 import urllib.request
 import zipfile
 import shutil
+import hashlib
 
-ORGANIZATION = "moonlight-stream"
-PREBUILT_REPO = "moonlight-qt-deps"
-TAG = "v19"
+# LanHouse: cópia validada no NOSSO fork (Release deps-v19 = moonlight-stream/moonlight-qt-deps v19),
+# não o repositório upstream - regra do projeto: binário de terceiro sob nosso controle, com SHA256.
+ORGANIZATION = "brunoerico"
+PREBUILT_REPO = "moonlight-qt"
+TAG = "deps-v19"
+SHA256 = {
+    "macos-universal.zip": "39fab7c95f5d513a6eb3bb19c66f1ae66bbf41dfe4118f82fabe3b46cc502d17",
+}
 
 def get_platform_config():
     system = platform.system()
     if system == "Darwin":
         return "mac", "macos-universal.zip"
-    if system == "Linux":
-        return "steamlink", "steamlink.zip"
-
     print(f"Error: Unsupported platform ({system})")
     sys.exit(1)
 
@@ -38,6 +41,12 @@ def download_and_extract():
         urllib.request.urlretrieve(url, archive_path)
     except Exception as e:
         print(f"Download failed: {e}")
+        sys.exit(1)
+
+    with open(archive_path, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    if digest != SHA256[asset_name]:
+        print(f"Error: SHA256 de {asset_name} não confere: {digest}")
         sys.exit(1)
 
     print(f"Extracting {asset_name}...")
