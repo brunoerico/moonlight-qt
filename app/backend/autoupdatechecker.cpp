@@ -29,6 +29,11 @@ AutoUpdateChecker::AutoUpdateChecker(QObject *parent) :
 
 void AutoUpdateChecker::start()
 {
+    // LanHouse: este fork é distribuído dentro dos apps LanHouse (Windows/macOS). Não consultar o
+    // moonlight-stream.org: o aviso levaria o usuário ao Moonlight oficial, sem as nossas mudanças.
+    // Atualizações chegam pelo próprio app LanHouse. O botão de update do main.qml fica invisível.
+    return;
+
     if (!m_Nam) {
         Q_ASSERT(m_Nam);
         return;
