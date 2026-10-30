@@ -71,7 +71,13 @@ void formatMinutes(const Minutes& m, char* out, size_t len)
         snprintf(out, len, "%s", kDash);
     }
     else {
-        snprintf(out, len, "%dmin", (int)std::max(0.0, std::floor(m.minutes)));
+        // Mesmo formato do painel do site (lanhouse-web/lib/duration.ts): "1h27", "2h", "36min".
+        int total = (int)std::max(0.0, std::floor(m.minutes));
+        int h = total / 60;
+        int r = total % 60;
+        if (h == 0) snprintf(out, len, "%dmin", r);
+        else if (r == 0) snprintf(out, len, "%dh", h);
+        else snprintf(out, len, "%dh%02d", h, r);
     }
 }
 

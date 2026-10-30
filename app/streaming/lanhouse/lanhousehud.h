@@ -6,7 +6,7 @@
 //
 // Mesmo formato nas três telas (TV, navegador, este app desktop):
 //
-//   1920x1080 · 60fps · 12ms · 25.3Mbps · HEVC · 87min
+//   1920x1080 · 60fps · 12ms · 25.3Mbps · HEVC · 1h27
 //
 // sem rótulos, na ordem fixa; "—" no campo que ainda não existe. Tudo aqui é
 // função pura (ou estado simples) só com a biblioteca padrão, pra dar pra
@@ -38,7 +38,7 @@ struct Quality {
 void setQuality(int rttMs, double mbps, double fps);
 Quality getQuality();
 
-// "87min" (arredonda pra baixo: nunca prometer mais tempo do que resta),
+// "1h27", "2h" ou "36min" (arredonda pra baixo: nunca prometer mais tempo do que resta),
 // "∞" no plano ilimitado, "—" enquanto não se sabe.
 void formatMinutes(const Minutes& m, char* out, size_t len);
 

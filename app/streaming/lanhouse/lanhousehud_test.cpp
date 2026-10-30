@@ -30,7 +30,10 @@ int main()
 {
     char buf[128];
 
-    formatMinutes({true, false, 87.9}, buf, sizeof(buf)); expectEq("minutos arredonda pra baixo", buf, "87min");
+    formatMinutes({true, false, 87.9}, buf, sizeof(buf)); expectEq("minutos arredonda pra baixo", buf, "1h27");
+    formatMinutes({true, false, 120}, buf, sizeof(buf)); expectEq("hora cheia", buf, "2h");
+    formatMinutes({true, false, 36.5}, buf, sizeof(buf)); expectEq("menos de 1 hora", buf, "36min");
+    formatMinutes({true, false, 605}, buf, sizeof(buf)); expectEq("minuto com zero", buf, "10h05");
     formatMinutes({true, false, 0.4}, buf, sizeof(buf)); expectEq("menos de 1 minuto vira 0min", buf, "0min");
     formatMinutes({true, false, -12}, buf, sizeof(buf)); expectEq("negativo vira 0min", buf, "0min");
     formatMinutes({true, true, 0}, buf, sizeof(buf)); expectEq("ilimitado", buf, "\xE2\x88\x9E");
@@ -52,7 +55,7 @@ int main()
     shortCodecName("", buf, sizeof(buf)); expectEq("codec vazio", buf, "\xE2\x80\x94");
 
     formatHudLine(buf, sizeof(buf), 1920, 1080, 59.6, 12, 25.34, "HEVC 10-bit HDR", {true, false, 87.2});
-    expectEq("HUD completo", buf, "1920x1080 \xC2\xB7 60fps \xC2\xB7 12ms \xC2\xB7 25.3Mbps \xC2\xB7 HEVC \xC2\xB7 87min");
+    expectEq("HUD completo", buf, "1920x1080 \xC2\xB7 60fps \xC2\xB7 12ms \xC2\xB7 25.3Mbps \xC2\xB7 HEVC \xC2\xB7 1h27");
 
     formatHudLine(buf, sizeof(buf), 0, 0, 0, -1, -1, "", {false, false, 0});
     expectEq("HUD sem nada medido ainda",

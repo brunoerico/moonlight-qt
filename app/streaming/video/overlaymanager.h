@@ -12,7 +12,7 @@ enum OverlayType {
     OverlayStatusUpdate,
 
     // HUD de telemetria da LanHouse, igual na TV, no navegador e aqui:
-    //   1920x1080 · 60fps · 12ms · 25.3Mbps · HEVC · 87min
+    //   1920x1080 · 60fps · 12ms · 25.3Mbps · HEVC · 1h27
     // Texto contornado, sem caixa, canto superior esquerdo. Começa DESLIGADO em
     // toda sessão e só liga pelo menu do jogo (OverlayMenu) - ao contrário do
     // OverlayDebug (Ctrl+Shift+Alt+S), que continua sendo o overlay verboso do

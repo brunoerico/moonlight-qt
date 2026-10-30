@@ -6,7 +6,7 @@
 // sessão (ver cli/lanhouseconnect.cpp), então quem sabe quantos minutos ainda
 // restam é o wrapper. Ele manda pelo stdin do Moonlight, uma linha por vez:
 //
-//   minutes 87.9        -> restam 87,9 minutos (o HUD mostra 87min)
+//   minutes 87.9        -> restam 87,9 minutos (o HUD mostra 1h27)
 //   minutes unlimited   -> plano ilimitado (o HUD mostra ∞)
 //   minutes unknown     -> não sabe (o HUD mostra —)
 //
